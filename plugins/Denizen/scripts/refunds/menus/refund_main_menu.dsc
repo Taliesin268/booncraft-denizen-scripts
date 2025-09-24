@@ -1,5 +1,3 @@
-# TODO: add "return_to" flag to the back button on quantity page
-
 # Main menu showing balance and options
 refund_main_menu:
     type: inventory
@@ -13,8 +11,8 @@ refund_main_menu:
         returns: <item[hopper].with[display=<&6>Return Purchased Items;lore=<&7>Return items you bought|<&7>to increase your balance.|<&7>|<&e>Click to view returnable items!;flag=action:returns]>
     slots:
     - [empty] [empty] [empty] [empty] [empty] [empty] [empty] [empty] [empty]
-    - [empty] [] [reclaim] [] [balance] [] [returns] [] [empty] 
-    - [empty] [empty] [empty] [empty] [empty] [empty] [empty] [empty] [empty] 
+    - [empty] [] [reclaim] [] [balance] [] [returns] [] [empty]
+    - [empty] [empty] [empty] [empty] [empty] [empty] [empty] [empty] [empty]
 
 refund_main_menu_handler:
     type: world
