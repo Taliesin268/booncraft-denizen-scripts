@@ -28,9 +28,18 @@ open_quantity_determination_menu:
 
 add_quantity_item_lore:
     type: procedure
-    definitions: item|unit_price|max_quantity
+    definitions: item|unit_price|max_quantity|stack_mode
     script:
-        - determine <item[<[item]>].with[display_name=How many <[item].material.name> would you like to reclaim?].with[lore=Price (each): <&a>$<[unit_price]>|<gold>Click the adjacent buttons to change the quantity. (Max <[max_quantity]>);flag=max_quantity:<[max_quantity]>]>
+        - define unit_price <[item].flag[unit_price]> if:!<[unit_price].exists>
+        - define max_quantity <[item].flag[max_quantity]> if:!<[max_quantity].exists>
+        - define price_prefix ""
+        - define price <[unit_price].mul[<[item].quantity>]>
+        - if <[stack_mode].exists> && <[stack_mode].as_boolean>:
+            - define price <[unit_price].mul[<[item].quantity>].mul[64]>
+            - if <[price]> > <[unit_price].mul[<[max_quantity]>]>:
+                - define price <[unit_price].mul[<[max_quantity]>]>
+                - define price_prefix " <red>(capped at price for <[max_quantity]> items)"
+        - determine <item[<[item]>].with[display_name=Click to claim this many items!].with[lore=Price (each): <&a>$<[unit_price]>|<bold>Price (total): <green>$<[price]><[price_prefix]>;flag=max_quantity:<[max_quantity]>;flag=unit_price:<[unit_price]>]>
 
 swap_to_stacks:
     type: item
@@ -92,3 +101,9 @@ change_quantity:
             - if <[item].quantity.mul[64]> > <[item].flag[max_quantity].add[63]>:
                 - define max_quantity_stacks <[item].flag[max_quantity].add[63].div_int[64]>
                 - inventory d:<[inventory]> adjust slot:14 quantity:<[max_quantity_stacks]>
+        # Reset the middle item's lore
+        - define item <[inventory].slot[14]>
+        - if <[inventory].slot[23].script.name> == swap_to_items:
+            - define stack_mode true
+        - inventory d:<[inventory]> set slot:14 o:<item[<[item]>].proc[add_quantity_item_lore].context[<[item].flag[unit_price]>|<[item].flag[max_quantity]>|<[stack_mode]>]>
+
