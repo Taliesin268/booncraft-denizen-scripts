@@ -67,7 +67,6 @@ quantity_determination_menu_handler:
             - inventory d:<context.inventory> set slot:23 o:swap_to_stacks
 
 # TODO make it check for stack mode
-# TODO make it not delete items if they go under 1 quantity
 change_quantity:
     type: task
     definitions: inventory|amount|direction
@@ -76,7 +75,10 @@ change_quantity:
         - if <[direction]> == increment:
             - inventory d:<[inventory]> adjust slot:14 quantity:<[item].quantity.add[<[amount]>]>
         - else if <[direction]> == decrement:
-            - inventory d:<[inventory]> adjust slot:14 quantity:<[item].quantity.sub[<[amount]>]>
+            - if <[item].quantity.sub[<[amount]>]> < 1:
+                - inventory d:<[inventory]> adjust slot:14 quantity:1
+            - else:
+                - inventory d:<[inventory]> adjust slot:14 quantity:<[item].quantity.sub[<[amount]>]>
         - define item <[inventory].slot[14]>
         - if <[item].quantity> > <[item].max_stack>:
             - inventory d:<[inventory]> adjust slot:14 quantity:<[item].max_stack>
