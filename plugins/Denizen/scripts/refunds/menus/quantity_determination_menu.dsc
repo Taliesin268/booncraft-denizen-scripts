@@ -5,7 +5,6 @@ quantity_determination_menu:
     gui: true
     definitions:
         empty: <item[gray_stained_glass_pane].with[display=<&7>]>
-        back: <item[barrier].with[display=<&c>Back to Main Menu;lore=<&7>Click to go back.;flag=action:back]>
         increment: <item[green_stained_glass_pane].with[display=<&a>Increase Quantity;lore=<&7>Click to increase the quantity by 1.;flag=action:increment;flag=amount:1]>
         increment_16: <item[green_stained_glass_pane].with[display=<&a>Increase Quantity;lore=<&7>Click to increase the quantity by 16.;flag=action:increment;flag=amount:16]>
         increment_32: <item[green_stained_glass_pane].with[display=<&a>Increase Quantity;lore=<&7>Click to increase the quantity by 32.;flag=action:increment;flag=amount:32]>
@@ -16,15 +15,22 @@ quantity_determination_menu:
     slots:
     - [] [] [] [] [] [] [] [] []
     - [decrement_32] [decrement_16] [decrement] [] [invalid_item] [] [increment] [increment_16] [increment_32]
-    - [] [] [] [] [swap_to_stacks] [] [] [] []
+    - [back_button] [] [] [] [swap_to_stacks] [] [] [] []
 
-# TODO make return_to attach to the back item
-# TODO make it set `max_quantity` to the max quantity of the item being refunded
 open_quantity_determination_menu:
     type: task
-    definitions: item|max_quantity|return_to
+    definitions: item|unit_price|max_quantity|return_to
     script:
-        - stop
+        - define inventory <inventory[quantity_determination_menu]>
+        - inventory d:<[inventory]> set slot:14 o:<[item].proc[add_quantity_item_lore].context[<[unit_price]>|<[max_quantity]>]>
+        - inventory set d:<[inventory]> slot:19 o:<item[back_button].with_flag[return_to:<[return_to]>]>
+        - inventory open d:<[inventory]>
+
+add_quantity_item_lore:
+    type: procedure
+    definitions: item|unit_price|max_quantity
+    script:
+        - determine <item[<[item]>].with[display_name=How many <[item].material.name> would you like to reclaim?].with[lore=Price (each): <&a>$<[unit_price]>|<gold>Click the adjacent buttons to change the quantity. (Max <[max_quantity]>);flag=max_quantity:<[max_quantity]>]>
 
 swap_to_stacks:
     type: item
@@ -48,25 +54,20 @@ quantity_determination_menu_handler:
         on player clicks item in quantity_determination_menu:
             - choose <context.item.flag[action]>:
                 - case back:
-                    - narrate "Going back..."
-                    - inventory open d:<context.item.flag[return_to]>
+                    - inventory open d:<inventory[<context.item.flag[return_to]>]>
 
                 - case increment:
                     - run change_quantity def.inventory:<context.inventory> def.amount:<context.item.flag[amount]> def.direction:increment
 
                 - case decrement:
                     - run change_quantity def.inventory:<context.inventory> def.amount:<context.item.flag[amount]> def.direction:decrement
+        on player clicks swap_to_stacks in quantity_determination_menu:
+            - inventory d:<context.inventory> set slot:23 o:swap_to_items
+        on player clicks swap_to_items in quantity_determination_menu:
+            - inventory d:<context.inventory> set slot:23 o:swap_to_stacks
 
-                - case swap_to_stacks:
-                    - narrate "Swapping to stack mode..."
-                    # Reopen the menu with adjusted increment/decrement values
-                    - run open_quantity_determination_menu def.item:<context.inventory.slot[13]> def.max_quantity:<context.inventory.flag[max_quantity]> def.return_to:<context.inventory.flag[return_to]>
-
-                - case swap_to_items:
-                    - narrate "Swapping to item mode..."
-                    # Reopen the menu with adjusted increment/decrement values
-                    - run open_quantity_determination_menu def.item:<context.inventory.slot[13]> def.max_quantity:<context.inventory.flag[max_quantity]> def.return_to:<context.inventory.flag[return_to]>
-
+# TODO make it check for stack mode
+# TODO make it not delete items if they go under 1 quantity
 change_quantity:
     type: task
     definitions: inventory|amount|direction

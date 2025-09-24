@@ -1,3 +1,5 @@
+# TODO: add "return_to" flag to the back button on quantity page
+
 # Main menu showing balance and options
 refund_main_menu:
     type: inventory
@@ -23,11 +25,9 @@ refund_main_menu_handler:
 
             - choose <context.item.flag[action]>:
                 - case reclaim:
-                    - narrate "Opening reclaim menu..."
                     - run open_paged_inventory def.items:<player.uuid.proc[get_refund_list]> def.page:1 def.inventory:refund_reclaim_menu
 
                 - case returns:
-                    - narrate "Opening returns menu..."
                     - run open_paged_inventory def.items:<player.uuid.proc[get_refund_list].context[bought]> def.page:1 def.inventory:refund_reclaim_menu
 
 refund_reclaim_menu:
@@ -37,7 +37,6 @@ refund_reclaim_menu:
     gui: true
     definitions:
         empty: <item[gray_stained_glass_pane].with[display=<&7>]>
-        back: <item[barrier].with[display=<&c>Back to Main Menu;lore=<&7>Click to return to the main refund menu.;flag=action:back]>
     slots:
     # Items display area (first 3 rows - 27 slots)
     - [] [] [] [] [] [] [] [] []
@@ -46,7 +45,7 @@ refund_reclaim_menu:
     # Separator row
     - [empty] [empty] [empty] [empty] [empty] [empty] [empty] [empty] [empty]
     # Navigation row - conditional previous/next based on page
-    - [back] [air] [air] [air] [air] [air] [air] [air] [air]
+    - [back_button] [air] [air] [air] [air] [air] [air] [air] [air]
 
 refund_reclaim_menu_handler:
     type: world
@@ -55,14 +54,14 @@ refund_reclaim_menu_handler:
             - if !<context.item.has_flag[action]>:
                 - stop
 
-            - narrate <context.item.flag[action]>
             - choose <context.item.flag[action]>:
                 - case back:
-                    - narrate "Going back..."
                     - inventory open d:refund_main_menu
 
                 - case reclaim:
-                    - narrate "Reclaiming item... <context.item.material>"
+                    - define unit_price <server.flag[refunds.<player.uuid>.sold.<context.item.material.name>.unit_price]>
+                    - define max_quantity <server.flag[refunds.<player.uuid>.sold.<context.item.material.name>.quantity]>
+                    - run open_quantity_determination_menu def.item:<context.item> def.unit_price:<[unit_price]> def.max_quantity:<[max_quantity]> def.return_to:<context.inventory>
 
 add_refund_lore:
     type: procedure
