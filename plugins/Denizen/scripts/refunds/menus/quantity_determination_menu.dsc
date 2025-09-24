@@ -61,12 +61,14 @@ quantity_determination_menu_handler:
 
                 - case decrement:
                     - run change_quantity def.inventory:<context.inventory> def.amount:<context.item.flag[amount]> def.direction:decrement
-        on player clicks swap_to_stacks in quantity_determination_menu:
-            - inventory d:<context.inventory> set slot:23 o:swap_to_items
-        on player clicks swap_to_items in quantity_determination_menu:
-            - inventory d:<context.inventory> set slot:23 o:swap_to_stacks
+        on player clicks swap_to_* in quantity_determination_menu:
+            - if <context.item.script.name> == swap_to_stacks:
+                - inventory d:<context.inventory> set slot:23 o:<item[swap_to_items]>
+                # Ensure quantity does not exceed max when switching to stacks
+                - run change_quantity def.inventory:<context.inventory> def.amount:0 def.direction:decrement
+            - else if <context.item.script.name> == swap_to_items:
+                - inventory d:<context.inventory> set slot:23 o:<item[swap_to_stacks]>
 
-# TODO make it check for stack mode
 change_quantity:
     type: task
     definitions: inventory|amount|direction
@@ -82,5 +84,11 @@ change_quantity:
         - define item <[inventory].slot[14]>
         - if <[item].quantity> > <[item].max_stack>:
             - inventory d:<[inventory]> adjust slot:14 quantity:<[item].max_stack>
-        - if <[item].quantity> > <[item].flag[max_quantity]>:
-            - inventory d:<[inventory]> adjust slot:14 quantity:<[item].flag[max_quantity]>
+        - if <[inventory].slot[23].script.name> == swap_to_stacks:
+            - if <[item].quantity> > <[item].flag[max_quantity]>:
+                - inventory d:<[inventory]> adjust slot:14 quantity:<[item].flag[max_quantity]>
+        - else if <[inventory].slot[23].script.name> == swap_to_items:
+            # Add 63 to max_quantity to allow for partial stacks
+            - if <[item].quantity.mul[64]> > <[item].flag[max_quantity].add[63]>:
+                - define max_quantity_stacks <[item].flag[max_quantity].add[63].div_int[64]>
+                - inventory d:<[inventory]> adjust slot:14 quantity:<[max_quantity_stacks]>
