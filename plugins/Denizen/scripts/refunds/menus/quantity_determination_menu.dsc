@@ -15,7 +15,7 @@ quantity_determination_menu:
     slots:
     - [] [] [] [] [] [] [] [] []
     - [decrement_32] [decrement_16] [decrement] [] [invalid_item] [] [increment] [increment_16] [increment_32]
-    - [back_button] [] [] [] [swap_to_stacks] [] [] [] []
+    - [back_button] [] [] [] [swap_to_stacks] [] [] [] [refund_balance]
 
 open_quantity_determination_menu:
     type: task

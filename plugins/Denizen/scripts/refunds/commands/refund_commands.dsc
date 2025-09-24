@@ -15,12 +15,9 @@ balance_refunds:
     script:
     - define target <server.match_offline_player[<[player_name]>]>
     - define available_funds <[target].money>
-    - define sold_items <server.flag[refunds.<[target].uuid>.sold]>
-    - if !<[sold_items]>:
+    - if !<server.flag[refunds.<[target].uuid>.sold].exists>:
         - stop
-    - define total_sold_items_price 0
-    - foreach <[sold_items].values> as:value:
-        - define total_sold_items_price:+:<[value].get[unit_price].mul[<[value].get[quantity]>]>
+    - define total_sold_items_price <[target].uuid.proc[get_total_sell_cost]>
     - define remaining_debt <[total_sold_items_price].sub[<server.flag[refunds.<[target].uuid>.balance].if_null[0]>]>
     # If the player has enough money to cover the remaining debt, take it all and clear their debt.
     - if <[available_funds]> >= <[remaining_debt]>:
@@ -30,3 +27,13 @@ balance_refunds:
     - else:
         - money set quantity:0 players:<[target]>
         - flag server refunds.<[target].uuid>.balance:+:<[available_funds]>
+
+get_total_sell_cost:
+    type: procedure
+    definitions: uuid
+    script:
+    - define total 0
+    - define sold_items <server.flag[refunds.<[uuid]>.sold].if_null[<map>]>
+    - foreach <[sold_items].values> as:value:
+        - define total:+:<[value].get[unit_price].mul[<[value].get[quantity]>]>
+    - determine <[total]>

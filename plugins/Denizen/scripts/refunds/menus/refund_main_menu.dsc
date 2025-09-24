@@ -6,12 +6,11 @@ refund_main_menu:
     gui: true
     definitions:
         empty: <item[gray_stained_glass_pane].with[display=<&7>]>
-        balance: <item[sunflower].with[display=<&e>Refund Balance;lore=<&7>Current Balance: <&a>$<server.flag[refunds.<player.uuid>.balance].if_null[0].format_number>|<&7>|<&7>This balance is used to|<&7>reclaim items you sold.]>
         reclaim: <item[chest].with[display=<&a>Reclaim Sold Items;lore=<&7>Get back items you sold|<&7>using your refund balance.|<&7>|<&e>Click to view items!;flag=action:reclaim]>
         returns: <item[hopper].with[display=<&6>Return Purchased Items;lore=<&7>Return items you bought|<&7>to increase your balance.|<&7>|<&e>Click to view returnable items!;flag=action:returns]>
     slots:
     - [empty] [empty] [empty] [empty] [empty] [empty] [empty] [empty] [empty]
-    - [empty] [] [reclaim] [] [balance] [] [returns] [] [empty]
+    - [empty] [] [reclaim] [] [refund_balance] [] [returns] [] [empty]
     - [empty] [empty] [empty] [empty] [empty] [empty] [empty] [empty] [empty]
 
 refund_main_menu_handler:
@@ -43,7 +42,7 @@ refund_reclaim_menu:
     # Separator row
     - [empty] [empty] [empty] [empty] [empty] [empty] [empty] [empty] [empty]
     # Navigation row - conditional previous/next based on page
-    - [back_button] [air] [air] [air] [air] [air] [air] [air] [air]
+    - [back_button] [air] [air] [air] [air] [air] [air] [air] [refund_balance]
 
 refund_reclaim_menu_handler:
     type: world
