@@ -5,13 +5,12 @@ refund_main_menu:
     title: Refund Menu
     gui: true
     definitions:
-        empty: <item[gray_stained_glass_pane].with[display=<&7>]>
         reclaim: <item[chest].with[display=<&a>Reclaim Sold Items;lore=<&7>Get back items you sold|<&7>using your refund balance.|<&7>|<&e>Click to view items!;flag=action:reclaim]>
         returns: <item[hopper].with[display=<&6>Return Purchased Items;lore=<&7>Return items you bought|<&7>to increase your balance.|<&7>|<&e>Click to view returnable items!;flag=action:returns]>
     slots:
-    - [empty] [empty] [empty] [empty] [empty] [empty] [empty] [empty] [empty]
-    - [empty] [] [reclaim] [] [refund_balance] [] [returns] [] [empty]
-    - [empty] [empty] [empty] [empty] [empty] [empty] [empty] [empty] [empty]
+    - [empty_slot] [empty_slot] [empty_slot] [empty_slot] [empty_slot] [empty_slot] [empty_slot] [empty_slot] [empty_slot]
+    - [empty_slot] [] [reclaim] [] [refund_balance] [] [returns] [] [empty_slot]
+    - [empty_slot] [empty_slot] [empty_slot] [empty_slot] [empty_slot] [empty_slot] [empty_slot] [empty_slot] [empty_slot]
 
 refund_main_menu_handler:
     type: world
@@ -32,15 +31,13 @@ refund_reclaim_menu:
     inventory: chest
     title: Reclaim Sold Items
     gui: true
-    definitions:
-        empty: <item[gray_stained_glass_pane].with[display=<&7>]>
     slots:
     # Items display area (first 3 rows - 27 slots)
     - [] [] [] [] [] [] [] [] []
     - [] [] [] [] [] [] [] [] []
     - [] [] [] [] [] [] [] [] []
     # Separator row
-    - [empty] [empty] [empty] [empty] [empty] [empty] [empty] [empty] [empty]
+    - [empty_slot] [empty_slot] [empty_slot] [empty_slot] [empty_slot] [empty_slot] [empty_slot] [empty_slot] [empty_slot]
     # Navigation row - conditional previous/next based on page
     - [back_button] [air] [air] [air] [air] [air] [air] [air] [refund_balance]
 
@@ -79,3 +76,27 @@ get_refund_list:
         - define list:->:<[key].proc[add_refund_lore].context[<[uuid]>|<[direction]>]>
     - determine <[list]>
 
+refund_return_menu:
+    type: inventory
+    inventory: chest
+    title: Return Purchased Items
+    definitions:
+        confirm: <item[confirm_button].with[display=<&a>Confirm Return;lore=<&7>Click to confirm returning|<&7>the selected items.]>
+        info: <item[info_block].with[display=<&e>Information;lore=<&7>Place items you wish to|<&7>return in the slots above.|<&7>|<&7>Your refund balance will be|<&7>increased by the total|<&7>value of the returned items.|<&7>|<&7>Click <green>confirm<&7> to process|<&7>the return.]>
+    slots:
+        - [] [] [] [] [] [] [] [] []
+        - [] [] [] [] [] [] [] [] []
+        - [] [] [] [] [] [] [] [] []
+        - [back_button] [empty_slot] [empty_slot] [empty_slot] [info] [empty_slot] [empty_slot] [empty_slot] [confirm]
+
+refund_return_menu_handler:
+    type: world
+    events:
+        on player closes refund_return_menu:
+            - narrate "Cancelling return and giving back Items: <context.inventory.exclude_item[back_button|confirm_button|info_block|empty_slot].list_contents>"
+        on player clicks confirm_button in refund_return_menu:
+            - narrate "Returning Items: <context.inventory.exclude_item[back_button|confirm_button].list_contents>"
+        on player clicks back_button|confirm_button|info_block|empty_slot in refund_return_menu:
+            - determine cancelled
+        on player drags back_button|confirm_button|info_block|empty_slot in refund_return_menu:
+            - determine cancelled
