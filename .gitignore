@@ -2,6 +2,7 @@
 *
 !.gitignore
 !CLAUDE.md
+!README.md
 
 # Un-ignore all .dsc files
 !plugins/

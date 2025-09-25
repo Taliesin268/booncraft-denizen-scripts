@@ -29,8 +29,8 @@ plugins/Denizen/scripts/refunds/
 
 ### Script Development
 - Scripts hot-reload automatically when saved to `plugins/Denizen/scripts/`
-- Use `/denizen reload` in game console to manually reload scripts
-- View script errors: `/denizen debug`
+- Use `/ex reload` in game console to manually reload scripts
+- View script errors: `/ex debug`
 
 ## Denizen Script Language (.dsc)
 
@@ -79,8 +79,8 @@ plugins/Denizen/scripts/refunds/
 - Always use `.material.name` as keys for consistent material identification
 
 ### Testing Changes
-- Reload scripts: `/denizen reload`
-- Check for errors: `/denizen debug`
+- Reload scripts: `/ex reload`
+- Check for errors: `/ex debug`
 - Test commands: `/import_refund_data` then interact with refund menus
 - Verify inventory GUIs work correctly in-game
 
