@@ -37,3 +37,39 @@ get_total_sell_cost:
     - foreach <[sold_items].values> as:value:
         - define total:+:<[value].get[unit_price].mul[<[value].get[quantity]>]>
     - determine <[total]>
+
+reclaim_item:
+    type: task
+    definitions: target|item|quantity
+    script:
+        # Default Values
+        - define quantity 1 if:!<[quantity].exists>
+        - define target <player> if:!<[target].exists>
+
+        - define material <[item].material.name>
+        - define unit_price <server.flag[refunds.<[target].uuid>.sold.<[material]>.unit_price]>
+        - define available_quantity <server.flag[refunds.<[target].uuid>.sold.<[material]>.quantity].if_null[0]>
+        - define available_balance <server.flag[refunds.<[target].uuid>.balance].if_null[0]>
+        - define item_plural <[item].with[quantity=2].formatted>
+
+        # Check if quantity is valid
+        - if <[quantity]> > <[available_quantity]>:
+            - clickable for:<player> usages:1 until:2m save:adjust_reclaim_item_quantity:
+                - run reclaim_item def.player:<[target]> def.item:<[item]> def.quantity:<[available_quantity]>
+            - narrate "<yellow>You tried to reclaim more <[item_plural]> than you have available. You can only reclaim <red><[available_quantity].format_number><yellow>. Click <green><bold><element[here].on_click[<entry[adjust_reclaim_item_quantity].command>]><yellow> to reclaim that many."
+            - stop
+
+        # Check if the player can afford it
+        - define total_cost <[unit_price].mul[<[quantity]>]>
+        - if <[available_balance]> < <[total_cost]>:
+            - define highest_quantity_affordable <[available_balance].div_int[<[unit_price]>]>
+            # Cancel if they can't afford even one
+            - if <[highest_quantity_affordable]> <= 0:
+                - narrate "<red>You do not have enough balance to reclaim any <[item_plural]>! You need at least <gold>$<[unit_price].format_number> <red>but you only have <gold>$<[available_balance].format_number><red>."
+                - stop
+            # Otherwise, offer to reclaim the most they can afford
+            - clickable for:<player> usages:1 until:2m save:adjust_reclaim_item_quantity:
+                - run reclaim_item def.player:<[target]> def.item:<[item]> def.quantity:<[highest_quantity_affordable]>
+            - narrate "<yellow>You do not have enough money to reclaim that many items! You need <gold>$<[total_cost].format_number> <yellow>but you only have <gold>$<[available_balance].format_number><yellow>. You could afford <red><[highest_quantity_affordable].format_number><yellow> of these items. Click <green><bold><element[here].on_click[<entry[adjust_reclaim_item_quantity].command>]><yellow> to reclaim that many."
+            - stop
+        - narrate "Reclaiming <green><[quantity].format_number> <gray>x <green><[material]> <gray>for <green>$<[unit_price].mul[<[quantity]>].format_number><gray>."
