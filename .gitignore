@@ -1,6 +1,7 @@
 # Ignore everything
 *
 !.gitignore
+!CLAUDE.md
 
 # Un-ignore all .dsc files
 !plugins/
