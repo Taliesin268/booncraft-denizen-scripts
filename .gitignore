@@ -1,0 +1,9 @@
+# Ignore everything
+*
+!.gitignore
+
+# Un-ignore all .dsc files
+!plugins/
+!plugins/Denizen/
+!plugins/Denizen/scripts/
+!plugins/Denizen/scripts/**
