@@ -1,3 +1,4 @@
+# TODO change the refund menu confirm button text
 # Main menu showing balance and options
 refund_main_menu:
     type: inventory
@@ -19,12 +20,14 @@ refund_main_menu_handler:
             - if !<context.item.has_flag[action]>:
                 - stop
 
+            - define target_uuid <context.item.flag[target_uuid].if_null[<player.uuid>]>
+
             - choose <context.item.flag[action]>:
                 - case reclaim:
-                    - run open_paged_inventory def.items:<player.uuid.proc[get_refund_list]> def.page:1 def.inventory:refund_reclaim_menu
+                    - run open_paged_inventory def.items:<[target_uuid].proc[get_refund_list]> def.page:1 def.inventory:refund_reclaim_menu def.target_uuid:<[target_uuid]> def.return_to:<context.inventory>
 
                 - case returns:
-                    - run open_paged_inventory def.items:<player.uuid.proc[get_refund_list].context[bought]> def.page:1 def.inventory:refund_return_listing
+                    - run open_paged_inventory def.items:<[target_uuid].proc[get_refund_list].context[bought]> def.page:1 def.inventory:refund_return_listing def.target_uuid:<[target_uuid]> def.return_to:<context.inventory>
 
 refund_reclaim_menu:
     type: inventory
@@ -46,6 +49,8 @@ refund_return_listing:
     inventory: chest
     title: Return Purchased Items
     gui: true
+    definitions:
+        listing_confirm: <item[confirm_button].with[display=<&a>Continue to Return;lore=<&7>Click to proceed to the|<&7>return interface where you|<&7>can place items to return.]>
     slots:
     # Items display area (first 3 rows - 27 slots)
     - [] [] [] [] [] [] [] [] []
@@ -54,7 +59,7 @@ refund_return_listing:
     # Separator row
     - [empty_slot] [empty_slot] [empty_slot] [empty_slot] [empty_slot] [empty_slot] [empty_slot] [empty_slot] [empty_slot]
     # Navigation row - conditional previous/next based on page
-    - [back_button] [air] [air] [air] [air] [air] [air] [air] [confirm_button]
+    - [back_button] [air] [air] [air] [air] [air] [air] [air] [listing_confirm]
 
 refund_reclaim_menu_handler:
     type: world
@@ -63,14 +68,16 @@ refund_reclaim_menu_handler:
             - if !<context.item.has_flag[action]>:
                 - stop
 
+            - define target_uuid <context.item.flag[target_uuid].if_null[<player.uuid>]>
+
             - choose <context.item.flag[action]>:
                 - case back:
-                    - inventory open d:refund_main_menu
+                    - inventory open d:<context.item.flag[return_to]>
 
                 - case reclaim:
-                    - define unit_price <server.flag[refunds.<player.uuid>.sold.<context.item.material.name>.unit_price]>
-                    - define max_quantity <server.flag[refunds.<player.uuid>.sold.<context.item.material.name>.quantity]>
-                    - run open_quantity_determination_menu def.item:<context.item> def.unit_price:<[unit_price]> def.max_quantity:<[max_quantity]> def.return_to:<context.inventory> def.action:reclaim
+                    - define unit_price <server.flag[refunds.<[target_uuid]>.sold.<context.item.material.name>.unit_price]>
+                    - define max_quantity <server.flag[refunds.<[target_uuid]>.sold.<context.item.material.name>.quantity]>
+                    - run open_quantity_determination_menu def.item:<context.item> def.unit_price:<[unit_price]> def.max_quantity:<[max_quantity]> def.return_to:<context.inventory> def.action:reclaim def.target_uuid:<[target_uuid]>
 
 refund_return_listing_handler:
     type: world
@@ -79,12 +86,22 @@ refund_return_listing_handler:
             - if !<context.item.has_flag[action]>:
                 - stop
 
+            - define target_uuid <context.item.flag[target_uuid].if_null[<player.uuid>]>
+
             - choose <context.item.flag[action]>:
                 - case back:
-                    - inventory open d:refund_main_menu
+                    - inventory open d:<context.item.flag[return_to]>
 
                 - case confirm:
-                    - inventory open d:refund_return_menu
+                    - define inventory <inventory[refund_return_menu]>
+                    # Update title for admin mode
+                    - if <[target_uuid]> != <player.uuid>:
+                        - define target_name <server.flag[refunds.<[target_uuid]>.player_name].if_null[Unknown]>
+                        - adjust <[inventory]> title:<Element[<red><[target_name]><black> Return Purchased Items]>
+                    # Add return_to and target_uuid to buttons to preserve state
+                    - inventory set d:<[inventory]> slot:28 o:<item[back_button].with_flag[return_to:<context.inventory>].with_flag[target_uuid:<[target_uuid]>]>
+                    - inventory set d:<[inventory]> slot:36 o:<item[confirm_button].with_flag[target_uuid:<[target_uuid]>]>
+                    - inventory open d:<[inventory]>
 
 add_refund_lore:
     type: procedure
@@ -95,9 +112,9 @@ add_refund_lore:
     - define base_lore <list[Price (each): <&a>$<[all_items.<[item]>.unit_price]>|Quantity: <&a><[all_items.<[item]>.quantity]>]>
     - if <[direction]> == sold:
         - define base_lore:->:<Element[<gold>Click to reclaim!]>
-        - determine <item[<[item]>].with[lore=<[base_lore]>;flag=action:reclaim]>
+        - determine <item[<[item]>].with[lore=<[base_lore]>;flag=action:reclaim;flag=target_uuid:<[uuid]>]>
     - else:
-        - determine <item[<[item]>].with[lore=<[base_lore]>]>
+        - determine <item[<[item]>].with[lore=<[base_lore]>;flag=target_uuid:<[uuid]>]>
 
 get_refund_list:
     type: procedure
@@ -133,9 +150,10 @@ refund_return_menu_handler:
                     - give <[item]>
                 - narrate "<yellow>Return cancelled - all items have been returned to your inventory."
         on player clicks confirm_button in refund_return_menu:
-            - run return_items def.target:<player> def.inventory:<context.inventory>
+            - define target_uuid <context.item.flag[target_uuid].if_null[<player.uuid>]>
+            - run return_items def.target_uuid:<[target_uuid]> def.inventory:<context.inventory>
         on player clicks back_button in refund_return_menu:
-            - run open_paged_inventory def.items:<player.uuid.proc[get_refund_list].context[bought]> def.page:1 def.inventory:refund_return_listing
+            - inventory open d:<context.item.flag[return_to]>
         on player clicks confirm_button|info_block|empty_slot in refund_return_menu:
             - determine cancelled
         on player drags back_button|confirm_button|info_block|empty_slot in refund_return_menu:

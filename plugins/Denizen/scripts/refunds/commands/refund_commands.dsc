@@ -40,22 +40,22 @@ get_total_sell_cost:
 
 reclaim_item:
     type: task
-    definitions: target|item|quantity
+    definitions: target_uuid|item|quantity
     script:
         # Default Values
         - define quantity 1 if:!<[quantity].exists>
-        - define target <player> if:!<[target].exists>
+        - define target_uuid <player.uuid> if:!<[target_uuid].exists>
 
         - define material <[item].material.name>
-        - define unit_price <server.flag[refunds.<[target].uuid>.sold.<[material]>.unit_price]>
-        - define available_quantity <server.flag[refunds.<[target].uuid>.sold.<[material]>.quantity].if_null[0]>
-        - define available_balance <server.flag[refunds.<[target].uuid>.balance].if_null[0]>
+        - define unit_price <server.flag[refunds.<[target_uuid]>.sold.<[material]>.unit_price]>
+        - define available_quantity <server.flag[refunds.<[target_uuid]>.sold.<[material]>.quantity].if_null[0]>
+        - define available_balance <server.flag[refunds.<[target_uuid]>.balance].if_null[0]>
         - define item_plural <[item].with[quantity=2].formatted>
 
         # Check if quantity is valid
         - if <[quantity]> > <[available_quantity]>:
             - clickable for:<player> usages:1 until:2m save:adjust_reclaim_item_quantity:
-                - run reclaim_item def.player:<[target]> def.item:<[item]> def.quantity:<[available_quantity]>
+                - run reclaim_item def.target_uuid:<[target_uuid]> def.item:<[item]> def.quantity:<[available_quantity]>
             - narrate "<yellow>You tried to reclaim more <[item_plural]> than you have available. You can only reclaim <red><[available_quantity].format_number><yellow>. Click <green><bold><element[here].on_click[<entry[adjust_reclaim_item_quantity].command>]><yellow> to reclaim that many."
             - stop
 
@@ -69,10 +69,10 @@ reclaim_item:
                 - stop
             # Otherwise, offer to reclaim the most they can afford
             - clickable for:<player> usages:1 until:2m save:adjust_reclaim_item_quantity:
-                - run reclaim_item def.player:<[target]> def.item:<[item]> def.quantity:<[highest_quantity_affordable]>
+                - run reclaim_item def.target_uuid:<[target_uuid]> def.item:<[item]> def.quantity:<[highest_quantity_affordable]>
             - narrate "<yellow>You do not have enough money to reclaim that many items! You need <gold>$<[total_cost].format_number> <yellow>but you only have <gold>$<[available_balance].format_number><yellow>. You could afford <red><[highest_quantity_affordable].format_number><yellow> of these items. Click <green><bold><element[here].on_click[<entry[adjust_reclaim_item_quantity].command>]><yellow> to reclaim that many."
             - stop
-        # Give items to player with leftover tracking
+        # Give items to current player with leftover tracking
         - give <item[<[material]>]> quantity:<[quantity]> ignore_leftovers save:give_result
         - define leftover_items <entry[give_result].leftover_items>
         - define total_leftover <[leftover_items].parse[quantity].sum>
@@ -84,20 +84,20 @@ reclaim_item:
             - narrate "<red>Your inventory is completely full! Please make some space and try again."
             - stop
 
-        # Update player's refund balance
-        - flag server refunds.<[target].uuid>.balance:-:<[actual_cost]>
+        # Update players refund balance
+        - flag server refunds.<[target_uuid]>.balance:-:<[actual_cost]>
 
         # Update sold items quantity
         - define new_quantity <[available_quantity].sub[<[actual_quantity]>]>
         - if <[new_quantity]> <= 0:
             # Remove the item entry entirely
-            - flag server refunds.<[target].uuid>.sold:<server.flag[refunds.<[target].uuid>.sold].exclude[<[material]>]>
+            - flag server refunds.<[target_uuid]>.sold:<server.flag[refunds.<[target_uuid]>.sold].exclude[<[material]>]>
         - else:
             # Update the quantity
-            - flag server refunds.<[target].uuid>.sold.<[material]>.quantity:<[new_quantity]>
+            - flag server refunds.<[target_uuid]>.sold.<[material]>.quantity:<[new_quantity]>
 
         # Success message
-        - define remaining_balance <server.flag[refunds.<[target].uuid>.balance].if_null[0]>
+        - define remaining_balance <server.flag[refunds.<[target_uuid]>.balance].if_null[0]>
         - narrate "Successfully reclaimed <green><[actual_quantity].format_number> <gray>x <green><[material]> <gray>for <green>$<[actual_cost].format_number><gray>!"
         - narrate "Remaining refund balance: <gold>$<[remaining_balance].format_number>"
 
@@ -107,10 +107,10 @@ reclaim_item:
 
 return_items:
     type: task
-    definitions: target|inventory
+    definitions: target_uuid|inventory
     script:
         # Default Values
-        - define target <player> if:!<[target].exists>
+        - define target_uuid <player.uuid> if:!<[target_uuid].exists>
 
         # Extract and group items from chest inventory (excluding UI elements)
         - define items_list <[inventory].exclude_item[back_button|confirm_button|info_block|empty_slot].list_contents>
@@ -129,7 +129,7 @@ return_items:
         - define items_to_process <map>
         - define invalid_items <list>
         - foreach <[items_to_return]> key:material as:requested_qty:
-            - define bought_data <server.flag[refunds.<[target].uuid>.bought.<[material]>].if_null[null]>
+            - define bought_data <server.flag[refunds.<[target_uuid]>.bought.<[material]>].if_null[null]>
 
             # Skip items not in bought list
             - if <[bought_data]> == null:
@@ -148,8 +148,8 @@ return_items:
                 - define total_refund:+:<[actual_qty].mul[<[unit_price]>]>
 
         # Warn about invalid items
-        - if !<[invalid_items].is_empty>:
-            - narrate "<red>Cannot return items you didn't buy from server: <[invalid_items].formatted>"
+        - if !<[invalid_items].exclude[air].is_empty>:
+            - narrate "<red>Cannot return items you didn't buy from server: <[invalid_items].exclude[air].formatted>"
 
         # Check if anything valid to process
         - if <[items_to_process].is_empty>:
@@ -157,21 +157,21 @@ return_items:
             - stop
 
         # Check balance capacity and handle overflow
-        - define current_balance <server.flag[refunds.<[target].uuid>.balance].if_null[0]>
-        - define max_balance <[target].uuid.proc[get_total_sell_cost]>
+        - define current_balance <server.flag[refunds.<[target_uuid]>.balance].if_null[0]>
+        - define max_balance <[target_uuid].proc[get_total_sell_cost]>
         - define balance_capacity <[max_balance].sub[<[current_balance]>]>
 
         # Process refund - balance vs direct money
         - if <[total_refund]> <= <[balance_capacity]>:
             # Add all to balance
-            - flag server refunds.<[target].uuid>.balance:+:<[total_refund]>
+            - flag server refunds.<[target_uuid]>.balance:+:<[total_refund]>
             - narrate "<green>Added <gold>$<[total_refund].format_number> <green>to your refund balance!"
         - else:
             # Split between balance and direct money
             - define balance_amount <[balance_capacity]>
             - define money_amount <[total_refund].sub[<[balance_capacity]>]>
-            - flag server refunds.<[target].uuid>.balance:<[max_balance]>
-            - money give quantity:<[money_amount]> players:<[target]>
+            - flag server refunds.<[target_uuid]>.balance:<[max_balance]>
+            - money give quantity:<[money_amount]> players:<player[<[target_uuid]>]>
             - narrate "<green>Refund balance maxed out! Added <gold>$<[balance_amount].format_number> <green>to balance and <gold>$<[money_amount].format_number> <green>to your wallet!"
 
         # List all successfully returned items
@@ -183,15 +183,84 @@ return_items:
 
         # Update bought quantities and clean up zero entries
         - foreach <[items_to_process]> key:material as:data:
-            - define current_bought_qty <server.flag[refunds.<[target].uuid>.bought.<[material]>.quantity]>
+            - define current_bought_qty <server.flag[refunds.<[target_uuid]>.bought.<[material]>.quantity]>
             - define new_qty <[current_bought_qty].sub[<[data].get[quantity]>]>
             - if <[new_qty]> <= 0:
                 # Remove the item entry entirely
-                - flag server refunds.<[target].uuid>.bought:<server.flag[refunds.<[target].uuid>.bought].exclude[<[material]>]>
+                - flag server refunds.<[target_uuid]>.bought:<server.flag[refunds.<[target_uuid]>.bought].exclude[<[material]>]>
             - else:
                 # Update the quantity
-                - flag server refunds.<[target].uuid>.bought.<[material]>.quantity:<[new_qty]>
+                - flag server refunds.<[target_uuid]>.bought.<[material]>.quantity:<[new_qty]>
 
         # Take the processed items from inventory
         - foreach <[items_to_process]> key:material as:data:
             - take item:<[material]> from:<[inventory]> quantity:<[data].get[quantity]>
+
+get_refund_players:
+    type: procedure
+    script:
+        - define player_map <map>
+        - define all_refund_data <server.flag[refunds].if_null[<map>]>
+        - foreach <[all_refund_data]> key:uuid as:player_data:
+            - if <[player_data].has_key[player_name]>:
+                - define player_map.<[uuid]>:<[player_data].get[player_name]>
+        - determine <[player_map]>
+
+open_refund_menu_for_player:
+    type: task
+    definitions: target_uuid
+    script:
+        - define target_uuid <player.uuid> if:!<[target_uuid].exists>
+        - define inventory <inventory[refund_main_menu]>
+
+        # Update title for admin mode
+        - if <[target_uuid]> != <player.uuid>:
+            - define target_name <server.flag[refunds.<[target_uuid]>.player_name].if_null[Unknown]>
+            - adjust <[inventory]> title:<Element[<red><[target_name]><black> Refund Menu]>
+        # Set target_uuid flag on reclaim and returns items
+        - inventory adjust d:<[inventory]> slot:12 flag:target_uuid:<[target_uuid]>
+        - inventory adjust d:<[inventory]> slot:16 flag:target_uuid:<[target_uuid]>
+        # Update refund balance display for the target UUID
+        - run get_refund_balance_item def.target_uuid:<[target_uuid]> save:balance_result
+        - inventory set d:<[inventory]> slot:14 o:<entry[balance_result].created_queue.determination>
+        - inventory open d:<[inventory]>
+
+refunds_command:
+    type: command
+    name: refunds
+    description: Open the refund menu to manage your balance and items
+    usage: /refunds [admin <&lt>player<&gt>]
+    permission: refunds.use
+    tab completions:
+        1: admin
+        2: <context.args.first.equals[admin].if_true[<proc[get_refund_players].values>].if_false[]>
+    script:
+        # Handle empty args - open main menu for self
+        - if <context.args.is_empty>:
+            - run open_refund_menu_for_player def.target_uuid:<player.uuid>
+            - stop
+
+        # Handle admin command
+        - if <context.args.first> == admin:
+            # Check admin permission
+            - if !<player.has_permission[refunds.admin]>:
+                - narrate "<red>You don't have permission to use admin commands!"
+                - stop
+
+            - if <context.args.size> != 2:
+                - narrate "<red>Usage: /refunds admin <player>"
+                - stop
+
+            - define target_name <context.args.get[2]>
+            - define refund_players <proc[get_refund_players]>
+            - define target_uuid <[refund_players].filter_tag[<[filter_value].equals[<[target_name]>]>].keys.first.if_null[null]>
+            - if <[target_uuid]> == null:
+                - narrate "<red>Player '<[target_name]>' not found in refund system!"
+                - stop
+
+            # Open refund menu for the target player
+            - run open_refund_menu_for_player def.target_uuid:<[target_uuid]>
+            - narrate "<green>Opened refund menu for <[target_name]>"
+
+        - else:
+            - narrate "<red>Usage: /refunds [admin <&lt>player<&gt>]"

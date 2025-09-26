@@ -19,14 +19,21 @@ quantity_determination_menu:
 
 open_quantity_determination_menu:
     type: task
-    definitions: item|unit_price|max_quantity|return_to|action
+    definitions: item|unit_price|max_quantity|return_to|action|target_uuid
     script:
+        - define target_uuid <player.uuid> if:!<[target_uuid].exists>
         - define inventory <inventory[quantity_determination_menu]>
+
+        # Update title for admin mode
+        - if <[target_uuid]> != <player.uuid>:
+            - define target_name <server.flag[refunds.<[target_uuid]>.player_name].if_null[Unknown]>
+            - adjust <[inventory]> title:<Element[<red><[target_name]><black> How many items?]>
         - define center_item <[item].proc[add_quantity_item_lore].context[<[unit_price]>|<[max_quantity]>]>
         - if <[action].exists>:
             - define center_item <[center_item].with_flag[action:<[action]>]>
+        - define center_item <[center_item].with_flag[target_uuid:<[target_uuid]>]>
         - inventory d:<[inventory]> set slot:14 o:<[center_item]>
-        - inventory set d:<[inventory]> slot:19 o:<item[back_button].with_flag[return_to:<[return_to]>]>
+        - inventory set d:<[inventory]> slot:19 o:<item[back_button].with_flag[return_to:<[return_to]>].with_flag[target_uuid:<[target_uuid]>]>
         - inventory open d:<[inventory]>
 
 add_quantity_item_lore:
@@ -66,7 +73,7 @@ quantity_determination_menu_handler:
         on player clicks item in quantity_determination_menu:
             - choose <context.item.flag[action]>:
                 - case back:
-                    - inventory open d:<inventory[<context.item.flag[return_to]>]>
+                    - inventory open d:<context.item.flag[return_to]>
 
                 - case increment:
                     - run change_quantity def.inventory:<context.inventory> def.amount:<context.item.flag[amount]> def.direction:increment
@@ -92,8 +99,11 @@ quantity_determination_menu_handler:
                     # Create clean base item for reclaim_item task
                     - define base_item <item[<[center_item].material.name>]>
 
+                    # Get target from center item flag
+                    - define target_uuid <[center_item].flag[target_uuid].if_null[<player.uuid>]>
+
                     # Call reclaim_item task
-                    - run reclaim_item def.target:<player> def.item:<[base_item]> def.quantity:<[actual_quantity]>
+                    - run reclaim_item def.target_uuid:<[target_uuid]> def.item:<[base_item]> def.quantity:<[actual_quantity]>
 
                     # Close the quantity menu
                     - inventory close
@@ -128,9 +138,14 @@ change_quantity:
             - if <[item].quantity.mul[64]> > <[item].flag[max_quantity].add[63]>:
                 - define max_quantity_stacks <[item].flag[max_quantity].add[63].div_int[64]>
                 - inventory d:<[inventory]> adjust slot:14 quantity:<[max_quantity_stacks]>
-        # Reset the middle item's lore
+        # Reset the middle items lore while preserving flags
         - define item <[inventory].slot[14]>
         - if <[inventory].slot[23].script.name> == swap_to_items:
             - define stack_mode true
-        - inventory d:<[inventory]> set slot:14 o:<item[<[item]>].proc[add_quantity_item_lore].context[<[item].flag[unit_price]>|<[item].flag[max_quantity]>|<[stack_mode]>]>
+        - define updated_item <item[<[item]>].proc[add_quantity_item_lore].context[<[item].flag[unit_price]>|<[item].flag[max_quantity]>|<[stack_mode]>]>
+        - if <[item].has_flag[action]>:
+            - define updated_item <[updated_item].with_flag[action:<[item].flag[action]>]>
+        - if <[item].has_flag[target_uuid]>:
+            - define updated_item <[updated_item].with_flag[target_uuid:<[item].flag[target_uuid]>]>
+        - inventory d:<[inventory]> set slot:14 o:<[updated_item]>
 

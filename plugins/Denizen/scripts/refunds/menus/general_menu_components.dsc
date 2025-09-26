@@ -37,3 +37,19 @@ empty_slot:
     type: item
     material: gray_stained_glass_pane
     display name: <&7>
+
+get_refund_balance_item:
+    type: task
+    definitions: target_uuid
+    script:
+        # Default to current player if no UUID provided
+        - define target_uuid <player.uuid> if:!<[target_uuid].exists>
+
+        # Get balance data for the target UUID
+        - define current_balance <server.flag[refunds.<[target_uuid]>.balance].if_null[0]>
+        - define total_cost <[target_uuid].proc[get_total_sell_cost].if_null[0]>
+
+        # Create the balance item with same format as static component
+        - define balance_item <item[sunflower].with[display=<gold>Refund Balance;lore=<&7>Current Balance: <&a>$<[current_balance].format_number>|<&7> / <red>$<[total_cost].format_number> (cost to reclaim all)|<&7>This balance is used to|<&7>reclaim items you sold.;flag=action:balance]>
+
+        - determine <[balance_item]>

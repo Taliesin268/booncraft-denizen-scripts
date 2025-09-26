@@ -112,3 +112,4 @@ plugins/Denizen/scripts/refunds/
 - UUID-based player identification for offline player support
 - Map structures for complex item data storage
 - Procedures for data calculations (`get_total_sell_cost`, `balance_refunds`)
+- Looks like to get the return of a task, you need to use <entry[save_name].created_queue.determination>
