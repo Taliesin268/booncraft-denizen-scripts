@@ -70,7 +70,7 @@ refund_reclaim_menu_handler:
                 - case reclaim:
                     - define unit_price <server.flag[refunds.<player.uuid>.sold.<context.item.material.name>.unit_price]>
                     - define max_quantity <server.flag[refunds.<player.uuid>.sold.<context.item.material.name>.quantity]>
-                    - run open_quantity_determination_menu def.item:<context.item> def.unit_price:<[unit_price]> def.max_quantity:<[max_quantity]> def.return_to:<context.inventory>
+                    - run open_quantity_determination_menu def.item:<context.item> def.unit_price:<[unit_price]> def.max_quantity:<[max_quantity]> def.return_to:<context.inventory> def.action:reclaim
 
 refund_return_listing_handler:
     type: world

@@ -19,10 +19,13 @@ quantity_determination_menu:
 
 open_quantity_determination_menu:
     type: task
-    definitions: item|unit_price|max_quantity|return_to
+    definitions: item|unit_price|max_quantity|return_to|action
     script:
         - define inventory <inventory[quantity_determination_menu]>
-        - inventory d:<[inventory]> set slot:14 o:<[item].proc[add_quantity_item_lore].context[<[unit_price]>|<[max_quantity]>]>
+        - define center_item <[item].proc[add_quantity_item_lore].context[<[unit_price]>|<[max_quantity]>]>
+        - if <[action].exists>:
+            - define center_item <[center_item].with_flag[action:<[action]>]>
+        - inventory d:<[inventory]> set slot:14 o:<[center_item]>
         - inventory set d:<[inventory]> slot:19 o:<item[back_button].with_flag[return_to:<[return_to]>]>
         - inventory open d:<[inventory]>
 
@@ -70,6 +73,30 @@ quantity_determination_menu_handler:
 
                 - case decrement:
                     - run change_quantity def.inventory:<context.inventory> def.amount:<context.item.flag[amount]> def.direction:decrement
+
+                - case reclaim:
+                    # Get the center item (slot 14) which has the selected quantity
+                    - define center_item <context.inventory.slot[14]>
+                    - define selected_quantity <[center_item].quantity>
+
+                    # Check if in stack mode and calculate actual quantity
+                    - if <context.inventory.slot[23].script.name> == swap_to_items:
+                        - define actual_quantity <[selected_quantity].mul[64]>
+                        # Cap at max_quantity if needed
+                        - define max_quantity <[center_item].flag[max_quantity]>
+                        - if <[actual_quantity]> > <[max_quantity]>:
+                            - define actual_quantity <[max_quantity]>
+                    - else:
+                        - define actual_quantity <[selected_quantity]>
+
+                    # Create clean base item for reclaim_item task
+                    - define base_item <item[<[center_item].material.name>]>
+
+                    # Call reclaim_item task
+                    - run reclaim_item def.target:<player> def.item:<[base_item]> def.quantity:<[actual_quantity]>
+
+                    # Close the quantity menu
+                    - inventory close
         on player clicks swap_to_* in quantity_determination_menu:
             - if <context.item.script.name> == swap_to_stacks:
                 - inventory d:<context.inventory> set slot:23 o:<item[swap_to_items]>
