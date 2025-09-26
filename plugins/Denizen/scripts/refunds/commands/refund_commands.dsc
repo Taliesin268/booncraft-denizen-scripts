@@ -104,3 +104,94 @@ reclaim_item:
         # If some items didn't fit, inform the player
         - if <[total_leftover]> > 0:
             - narrate "<yellow>Warning: <red><[total_leftover]> <yellow>items couldn't fit in your inventory and were not given."
+
+return_items:
+    type: task
+    definitions: target|inventory
+    script:
+        # Default Values
+        - define target <player> if:!<[target].exists>
+
+        # Extract and group items from chest inventory (excluding UI elements)
+        - define items_list <[inventory].exclude_item[back_button|confirm_button|info_block|empty_slot].list_contents>
+        - define items_to_return <map>
+        - foreach <[items_list]> as:item:
+            - define mat <[item].material.name>
+            - define current_qty <[items_to_return].get[<[mat]>].if_null[0]>
+            - define items_to_return.<[mat]>:<[current_qty].add[<[item].quantity>]>
+
+        - if <[items_to_return].is_empty>:
+            - narrate "<yellow>No items to return! Place items in the chest and try again."
+            - stop
+
+        # Validate items against bought data and calculate refund
+        - define total_refund 0
+        - define items_to_process <map>
+        - define invalid_items <list>
+        - foreach <[items_to_return]> key:material as:requested_qty:
+            - define bought_data <server.flag[refunds.<[target].uuid>.bought.<[material]>].if_null[null]>
+
+            # Skip items not in bought list
+            - if <[bought_data]> == null:
+                - define invalid_items:->:<[material]>
+            - else:
+                - define available_qty <[bought_data].get[quantity]>
+                - define unit_price <[bought_data].get[unit_price]>
+                - define actual_qty <[requested_qty].min[<[available_qty]>]>
+
+                # Info when capping quantity at available amount
+                - if <[actual_qty]> < <[requested_qty]>:
+                    - define leftover_qty <[requested_qty].sub[<[actual_qty]>]>
+                    - narrate "<blue>ℹ <gray>The maximum number of <item[<[material]>].with[quantity=2].formatted> you can return is <[actual_qty]>. Leaving <[leftover_qty]> behind."
+
+                - define items_to_process.<[material]>:<map[quantity=<[actual_qty]>;unit_price=<[unit_price]>]>
+                - define total_refund:+:<[actual_qty].mul[<[unit_price]>]>
+
+        # Warn about invalid items
+        - if !<[invalid_items].is_empty>:
+            - narrate "<red>Cannot return items you didn't buy from server: <[invalid_items].formatted>"
+
+        # Check if anything valid to process
+        - if <[items_to_process].is_empty>:
+            - narrate "<red>No valid items to return!"
+            - stop
+
+        # Check balance capacity and handle overflow
+        - define current_balance <server.flag[refunds.<[target].uuid>.balance].if_null[0]>
+        - define max_balance <[target].uuid.proc[get_total_sell_cost]>
+        - define balance_capacity <[max_balance].sub[<[current_balance]>]>
+
+        # Process refund - balance vs direct money
+        - if <[total_refund]> <= <[balance_capacity]>:
+            # Add all to balance
+            - flag server refunds.<[target].uuid>.balance:+:<[total_refund]>
+            - narrate "<green>Added <gold>$<[total_refund].format_number> <green>to your refund balance!"
+        - else:
+            # Split between balance and direct money
+            - define balance_amount <[balance_capacity]>
+            - define money_amount <[total_refund].sub[<[balance_capacity]>]>
+            - flag server refunds.<[target].uuid>.balance:<[max_balance]>
+            - money give quantity:<[money_amount]> players:<[target]>
+            - narrate "<green>Refund balance maxed out! Added <gold>$<[balance_amount].format_number> <green>to balance and <gold>$<[money_amount].format_number> <green>to your wallet!"
+
+        # List all successfully returned items
+        - narrate "<gray>Items returned:"
+        - foreach <[items_to_process]> key:material as:data:
+            - define quantity <[data].get[quantity]>
+            - define item_display <item[<[material]>].with[quantity=2].formatted>
+            - narrate "<gray>- <[quantity]> <[item_display]>"
+
+        # Update bought quantities and clean up zero entries
+        - foreach <[items_to_process]> key:material as:data:
+            - define current_bought_qty <server.flag[refunds.<[target].uuid>.bought.<[material]>.quantity]>
+            - define new_qty <[current_bought_qty].sub[<[data].get[quantity]>]>
+            - if <[new_qty]> <= 0:
+                # Remove the item entry entirely
+                - flag server refunds.<[target].uuid>.bought:<server.flag[refunds.<[target].uuid>.bought].exclude[<[material]>]>
+            - else:
+                # Update the quantity
+                - flag server refunds.<[target].uuid>.bought.<[material]>.quantity:<[new_qty]>
+
+        # Take the processed items from inventory
+        - foreach <[items_to_process]> key:material as:data:
+            - take item:<[material]> from:<[inventory]> quantity:<[data].get[quantity]>

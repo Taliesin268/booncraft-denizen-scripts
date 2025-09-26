@@ -25,6 +25,8 @@ confirm_button:
     display name: <&a>Confirm
     lore:
         - <&7>Click to confirm
+    flags:
+        action: confirm
 
 info_block:
     type: item

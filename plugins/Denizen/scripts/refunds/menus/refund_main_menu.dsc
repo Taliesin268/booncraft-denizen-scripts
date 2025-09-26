@@ -24,7 +24,7 @@ refund_main_menu_handler:
                     - run open_paged_inventory def.items:<player.uuid.proc[get_refund_list]> def.page:1 def.inventory:refund_reclaim_menu
 
                 - case returns:
-                    - run open_paged_inventory def.items:<player.uuid.proc[get_refund_list].context[bought]> def.page:1 def.inventory:refund_reclaim_menu
+                    - run open_paged_inventory def.items:<player.uuid.proc[get_refund_list].context[bought]> def.page:1 def.inventory:refund_return_listing
 
 refund_reclaim_menu:
     type: inventory
@@ -41,6 +41,21 @@ refund_reclaim_menu:
     # Navigation row - conditional previous/next based on page
     - [back_button] [air] [air] [air] [air] [air] [air] [air] [refund_balance]
 
+refund_return_listing:
+    type: inventory
+    inventory: chest
+    title: Return Purchased Items
+    gui: true
+    slots:
+    # Items display area (first 3 rows - 27 slots)
+    - [] [] [] [] [] [] [] [] []
+    - [] [] [] [] [] [] [] [] []
+    - [] [] [] [] [] [] [] [] []
+    # Separator row
+    - [empty_slot] [empty_slot] [empty_slot] [empty_slot] [empty_slot] [empty_slot] [empty_slot] [empty_slot] [empty_slot]
+    # Navigation row - conditional previous/next based on page
+    - [back_button] [air] [air] [air] [air] [air] [air] [air] [confirm_button]
+
 refund_reclaim_menu_handler:
     type: world
     events:
@@ -56,6 +71,20 @@ refund_reclaim_menu_handler:
                     - define unit_price <server.flag[refunds.<player.uuid>.sold.<context.item.material.name>.unit_price]>
                     - define max_quantity <server.flag[refunds.<player.uuid>.sold.<context.item.material.name>.quantity]>
                     - run open_quantity_determination_menu def.item:<context.item> def.unit_price:<[unit_price]> def.max_quantity:<[max_quantity]> def.return_to:<context.inventory>
+
+refund_return_listing_handler:
+    type: world
+    events:
+        on player clicks item in refund_return_listing:
+            - if !<context.item.has_flag[action]>:
+                - stop
+
+            - choose <context.item.flag[action]>:
+                - case back:
+                    - inventory open d:refund_main_menu
+
+                - case confirm:
+                    - inventory open d:refund_return_menu
 
 add_refund_lore:
     type: procedure
@@ -93,9 +122,13 @@ refund_return_menu_handler:
     type: world
     events:
         on player closes refund_return_menu:
-            - narrate "Cancelling return and giving back Items: <context.inventory.exclude_item[back_button|confirm_button|info_block|empty_slot].list_contents>"
+            - define items_to_return <context.inventory.exclude_item[back_button|confirm_button|info_block|empty_slot].list_contents>
+            - if !<[items_to_return].is_empty>:
+                - foreach <[items_to_return]> as:item:
+                    - give <[item]>
+                - narrate "<yellow>Return cancelled - all items have been returned to your inventory."
         on player clicks confirm_button in refund_return_menu:
-            - narrate "Returning Items: <context.inventory.exclude_item[back_button|confirm_button|info_block|empty_slot].list_contents>"
+            - run return_items def.target:<player> def.inventory:<context.inventory>
         on player clicks back_button|confirm_button|info_block|empty_slot in refund_return_menu:
             - determine cancelled
         on player drags back_button|confirm_button|info_block|empty_slot in refund_return_menu:

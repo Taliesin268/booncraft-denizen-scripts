@@ -77,6 +77,13 @@ plugins/Denizen/scripts/refunds/
 - `give` command with `ignore_leftovers save:name` tracks undelivered items
 - `<entry[name].leftover_items>` returns list of items that didn't fit in inventory
 - Always use `.material.name` as keys for consistent material identification
+- **Item matchers**: Use material name strings, not item objects (e.g., `item:<[material]>` not `item:<item[<[material]>]>`)
+- `take` command works on inventories: `take item:<[material]> quantity:<#> from:<[inventory]>`
+
+#### Inventory Operations
+- Item extraction: use `exclude_item[ui_elements].list_contents` to get only player-placed items
+- Aggregate stacks by material using maps in foreach loops
+- Balance overflow pattern: split refunds between balance capacity and direct money payments
 
 ### Testing Changes
 - Reload scripts: `/ex reload`
