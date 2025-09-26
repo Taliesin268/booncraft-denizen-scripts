@@ -129,7 +129,9 @@ refund_return_menu_handler:
                 - narrate "<yellow>Return cancelled - all items have been returned to your inventory."
         on player clicks confirm_button in refund_return_menu:
             - run return_items def.target:<player> def.inventory:<context.inventory>
-        on player clicks back_button|confirm_button|info_block|empty_slot in refund_return_menu:
+        on player clicks back_button in refund_return_menu:
+            - run open_paged_inventory def.items:<player.uuid.proc[get_refund_list].context[bought]> def.page:1 def.inventory:refund_return_listing
+        on player clicks confirm_button|info_block|empty_slot in refund_return_menu:
             - determine cancelled
         on player drags back_button|confirm_button|info_block|empty_slot in refund_return_menu:
             - determine cancelled
