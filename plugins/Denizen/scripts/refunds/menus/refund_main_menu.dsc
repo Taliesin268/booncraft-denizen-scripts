@@ -92,7 +92,12 @@ add_refund_lore:
     script:
     - define direction sold if:!<[direction].exists>
     - define all_items <server.flag[refunds.<[uuid]>.<[direction]>].if_null[<map>]>
-    - determine <item[<[item]>].with[lore=Price (each): <&a>$<[all_items.<[item]>.unit_price]>|Quantity: <&a><[all_items.<[item]>.quantity]>|<gold>Click to reclaim!;flag=action:reclaim]>
+    - define base_lore <list[Price (each): <&a>$<[all_items.<[item]>.unit_price]>|Quantity: <&a><[all_items.<[item]>.quantity]>]>
+    - if <[direction]> == sold:
+        - define base_lore:->:<Element[<gold>Click to reclaim!]>
+        - determine <item[<[item]>].with[lore=<[base_lore]>;flag=action:reclaim]>
+    - else:
+        - determine <item[<[item]>].with[lore=<[base_lore]>]>
 
 get_refund_list:
     type: procedure

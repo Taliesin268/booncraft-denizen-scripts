@@ -71,6 +71,7 @@ plugins/Denizen/scripts/refunds/
 - `sum` aggregates numerical lists - useful with parse for calculating totals
 - Example: `<[items].parse[quantity].sum>` gets total quantity across all items
 - `exclude[key]` on maps removes entries - useful for cleanup
+- **Element wrapping**: Standalone strings must be wrapped in `<Element[text]>` tags since everything in Denizen must be a tag object
 
 #### Item Handling
 - Use `<item[material_name]>` for clean base items vs decorated UI items
