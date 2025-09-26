@@ -95,7 +95,7 @@ refund_return_menu_handler:
         on player closes refund_return_menu:
             - narrate "Cancelling return and giving back Items: <context.inventory.exclude_item[back_button|confirm_button|info_block|empty_slot].list_contents>"
         on player clicks confirm_button in refund_return_menu:
-            - narrate "Returning Items: <context.inventory.exclude_item[back_button|confirm_button].list_contents>"
+            - narrate "Returning Items: <context.inventory.exclude_item[back_button|confirm_button|info_block|empty_slot].list_contents>"
         on player clicks back_button|confirm_button|info_block|empty_slot in refund_return_menu:
             - determine cancelled
         on player drags back_button|confirm_button|info_block|empty_slot in refund_return_menu:
