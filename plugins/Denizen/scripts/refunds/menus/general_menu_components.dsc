@@ -13,7 +13,9 @@ refund_balance:
     display name: <gold>Refund Balance
     lore:
         - <&7>Current Balance: <&a><server.flag[refunds.<player.uuid>.balance].if_null[0].proc[format_as_tokens]> tokens
-        - <&7> / <red><player.uuid.proc[get_total_sell_cost].if_null[0].proc[format_as_tokens]> tokens (cost to reclaim all)
+        - <&7>
+        - <list[<&7>If you get <&c><player.uuid.proc[get_total_sell_cost].if_null[0].sub[<server.flag[refunds.<player.uuid>.balance].if_null[0]>].proc[format_as_tokens]> more tokens<&7>,|<&7>any extra tokens will be redeemed|<&7>at 1¢ each.].if[<server.flag[refunds.<player.uuid>.balance].if_null[0].is_less_than[<player.uuid.proc[get_total_sell_cost].if_null[0]>]>].if_null[<list[<&7>Any further returns will add|<&7>1¢ per token to your balance.]>]>
+        - <&7>
         - <&7>These tokens are used to
         - <&7>reclaim items you sold.
         - <&7>
@@ -53,7 +55,13 @@ get_refund_balance_item:
         - define total_cost <[target_uuid].proc[get_total_sell_cost].if_null[0]>
         - define max_contribution <[total_cost].sub[<[current_balance]>].max[0]>
 
+        # Create conditional message based on whether threshold is reached
+        - if <[current_balance].is_less_than[<[total_cost]>]>:
+            - define threshold_message <list[<&7>If you get <&c><[total_cost].sub[<[current_balance]>].proc[format_as_tokens]> more tokens<&7>,|<&7>any extra tokens will be redeemed|<&7>at 1¢ each.]>
+        - else:
+            - define threshold_message <list[<&7>Any further returns will add|<&7>1¢ per token to your balance.]>
+
         # Create the balance item with same format as static component
-        - define balance_item <item[sunflower].with[display=<gold>Refund Balance;lore=<&7>Current Balance: <&a><[current_balance].proc[format_as_tokens]> tokens|<&7> / <red><[total_cost].proc[format_as_tokens]> tokens (cost to reclaim all)|<&7>These tokens are used to|<&7>reclaim items you sold.|<&7>|<&b>Click to add tokens to your balance!|<&7>Max contribution: <&e><[max_contribution].proc[format_as_tokens]> tokens;flag=action:balance;flag=target_uuid:<[target_uuid]>]>
+        - define balance_item <item[sunflower].with[display=<gold>Refund Balance;lore=<&7>Current Balance: <&a><[current_balance].proc[format_as_tokens]> tokens|<&7>|<[threshold_message].separated_by[|]>|<&7>|<&7>These tokens are used to|<&7>reclaim items you sold.|<&7>|<&b>Click to add tokens to your balance!|<&7>Max contribution: <&e><[max_contribution].proc[format_as_tokens]> tokens;flag=action:balance;flag=target_uuid:<[target_uuid]>]>
 
         - determine <[balance_item]>

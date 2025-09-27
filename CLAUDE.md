@@ -95,6 +95,8 @@ plugins/Denizen/scripts/refunds/
 - Clickable elements in books: `<element[text].on_click[command]>`
 - Dynamic values in books: Tags like `<player.name>` work in book text
 - Books can have custom lore when given as items
+- **Dynamic pages**: Book pages can be generated using procedures with `<player.uuid.proc[procedure_name]>`
+- **Conditional pages**: Procedures can return empty elements to skip pages entirely
 
 #### World Events
 - Use `type: world` for server-wide event handlers
@@ -113,6 +115,9 @@ plugins/Denizen/scripts/refunds/
 - Use color codes and formatting in lore text
 - Dynamic lore with tags: include player data, timestamps, etc.
 - Combine multiple item modifications in one expression
+- **Conditional lore lines**: Use `<list[items].if[condition].if_null[fallback_list]>` for dynamic lore
+- **Threshold messaging**: Calculate remaining amounts with `.sub[]` for "X more needed" displays
+- **State-based messages**: Use `.is_less_than[]` to show different messages based on thresholds
 
 #### Number Formatting
 - Use `format_number[#,##0.00]` for decimal formatting (e.g., 1234.5 → 1,234.50)
