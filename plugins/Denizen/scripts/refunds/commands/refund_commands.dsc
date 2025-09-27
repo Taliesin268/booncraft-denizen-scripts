@@ -46,28 +46,39 @@ reclaim_item:
         - define quantity 1 if:!<[quantity].exists>
         - define target_uuid <player.uuid> if:!<[target_uuid].exists>
 
+        # Generate trace ID for this transaction
+        - define trace_id <util.random_uuid>
+
         - define material <[item].material.name>
         - define unit_price <server.flag[refunds.<[target_uuid]>.sold.<[material]>.unit_price]>
         - define available_quantity <server.flag[refunds.<[target_uuid]>.sold.<[material]>.quantity].if_null[0]>
         - define available_balance <server.flag[refunds.<[target_uuid]>.balance].if_null[0]>
         - define item_plural <[item].with[quantity=2].formatted>
 
+        # Calculate total cost for logging
+        - define total_cost <[unit_price].mul[<[quantity]>]>
+
+        # Log attempt
+        - ~log "RECLAIM_ATTEMPT: TraceID=<[trace_id]> Player=<player.name>(<player.uuid>) Target=<[target_uuid]> Item=<[material]> Qty=<[quantity]> Cost=$<[total_cost].format_number> Balance=$<[available_balance].format_number>" file:plugins/Denizen/logs/refunds/refunds_<util.time_now.format[yyyy-MM-dd]>.log
+
         # Check if quantity is valid
         - if <[quantity]> > <[available_quantity]>:
+            - ~log "RECLAIM_FAILED: TraceID=<[trace_id]> Player=<player.name> Target=<[target_uuid]> Reason=INVALID_QUANTITY Requested=<[quantity]> Available=<[available_quantity]>" type:warning file:plugins/Denizen/logs/refunds/refunds_<util.time_now.format[yyyy-MM-dd]>.log
             - clickable for:<player> usages:1 until:2m save:adjust_reclaim_item_quantity:
                 - run reclaim_item def.target_uuid:<[target_uuid]> def.item:<[item]> def.quantity:<[available_quantity]>
             - narrate "<yellow>You tried to reclaim more <[item_plural]> than you have available. You can only reclaim <red><[available_quantity].format_number><yellow>. Click <green><bold><element[here].on_click[<entry[adjust_reclaim_item_quantity].command>]><yellow> to reclaim that many."
             - stop
 
         # Check if the player can afford it
-        - define total_cost <[unit_price].mul[<[quantity]>]>
         - if <[available_balance]> < <[total_cost]>:
             - define highest_quantity_affordable <[available_balance].div_int[<[unit_price]>]>
             # Cancel if they can't afford even one
             - if <[highest_quantity_affordable]> <= 0:
+                - ~log "RECLAIM_FAILED: TraceID=<[trace_id]> Player=<player.name> Target=<[target_uuid]> Reason=INSUFFICIENT_BALANCE_ZERO Need=$<[unit_price].format_number> Have=$<[available_balance].format_number>" type:warning file:plugins/Denizen/logs/refunds/refunds_<util.time_now.format[yyyy-MM-dd]>.log
                 - narrate "<red>You do not have enough balance to reclaim any <[item_plural]>! You need at least <gold>$<[unit_price].format_number> <red>but you only have <gold>$<[available_balance].format_number><red>."
                 - stop
             # Otherwise, offer to reclaim the most they can afford
+            - ~log "RECLAIM_FAILED: TraceID=<[trace_id]> Player=<player.name> Target=<[target_uuid]> Reason=INSUFFICIENT_BALANCE Need=$<[total_cost].format_number> Have=$<[available_balance].format_number> CanAfford=<[highest_quantity_affordable]>" type:warning file:plugins/Denizen/logs/refunds/refunds_<util.time_now.format[yyyy-MM-dd]>.log
             - clickable for:<player> usages:1 until:2m save:adjust_reclaim_item_quantity:
                 - run reclaim_item def.target_uuid:<[target_uuid]> def.item:<[item]> def.quantity:<[highest_quantity_affordable]>
             - narrate "<yellow>You do not have enough money to reclaim that many items! You need <gold>$<[total_cost].format_number> <yellow>but you only have <gold>$<[available_balance].format_number><yellow>. You could afford <red><[highest_quantity_affordable].format_number><yellow> of these items. Click <green><bold><element[here].on_click[<entry[adjust_reclaim_item_quantity].command>]><yellow> to reclaim that many."
@@ -81,6 +92,7 @@ reclaim_item:
 
         # If no items could be given (inventory completely full), stop
         - if <[actual_quantity]> <= 0:
+            - ~log "RECLAIM_FAILED: TraceID=<[trace_id]> Player=<player.name> Target=<[target_uuid]> Reason=INVENTORY_FULL Item=<[material]> Qty=<[quantity]>" type:warning file:plugins/Denizen/logs/refunds/refunds_<util.time_now.format[yyyy-MM-dd]>.log
             - narrate "<red>Your inventory is completely full! Please make some space and try again."
             - stop
 
@@ -98,6 +110,13 @@ reclaim_item:
 
         # Success message
         - define remaining_balance <server.flag[refunds.<[target_uuid]>.balance].if_null[0]>
+
+        # Log success (including leftover info if applicable)
+        - if <[total_leftover]> > 0:
+            - ~log "RECLAIM_SUCCESS: TraceID=<[trace_id]> Player=<player.name> Target=<[target_uuid]> Item=<[material]> Qty=<[actual_quantity]>/<[quantity]> Cost=$<[actual_cost].format_number> NewBalance=$<[remaining_balance].format_number> Leftover=<[total_leftover]>" file:plugins/Denizen/logs/refunds/refunds_<util.time_now.format[yyyy-MM-dd]>.log
+        - else:
+            - ~log "RECLAIM_SUCCESS: TraceID=<[trace_id]> Player=<player.name> Target=<[target_uuid]> Item=<[material]> Qty=<[actual_quantity]> Cost=$<[actual_cost].format_number> NewBalance=$<[remaining_balance].format_number>" file:plugins/Denizen/logs/refunds/refunds_<util.time_now.format[yyyy-MM-dd]>.log
+
         - narrate "Successfully reclaimed <green><[actual_quantity].format_number> <gray>x <green><[material]> <gray>for <green>$<[actual_cost].format_number><gray>!"
         - narrate "Remaining refund balance: <gold>$<[remaining_balance].format_number>"
 
@@ -112,6 +131,9 @@ return_items:
         # Default Values
         - define target_uuid <player.uuid> if:!<[target_uuid].exists>
 
+        # Generate trace ID for this transaction
+        - define trace_id <util.random_uuid>
+
         # Extract and group items from chest inventory (excluding UI elements)
         - define items_list <[inventory].exclude_item[back_button|confirm_button|info_block|empty_slot].list_contents>
         - define items_to_return <map>
@@ -120,7 +142,15 @@ return_items:
             - define current_qty <[items_to_return].get[<[mat]>].if_null[0]>
             - define items_to_return.<[mat]>:<[current_qty].add[<[item].quantity>]>
 
+        # Log attempt with quantities
+        - define items_log <list>
+        - foreach <[items_to_return]> key:material as:quantity:
+            - if <[material]> != air:
+                - define items_log:->:<[material]>x<[quantity]>
+        - ~log "RETURN_ATTEMPT: TraceID=<[trace_id]> Player=<player.name>(<player.uuid>) Target=<[target_uuid]> Items=<[items_log].separated_by[,]>" file:plugins/Denizen/logs/refunds/refunds_<util.time_now.format[yyyy-MM-dd]>.log
+
         - if <[items_to_return].is_empty>:
+            - ~log "RETURN_FAILED: TraceID=<[trace_id]> Player=<player.name> Target=<[target_uuid]> Reason=NO_ITEMS" type:warning file:plugins/Denizen/logs/refunds/refunds_<util.time_now.format[yyyy-MM-dd]>.log
             - narrate "<yellow>No items to return! Place items in the chest and try again."
             - stop
 
@@ -149,10 +179,12 @@ return_items:
 
         # Warn about invalid items
         - if !<[invalid_items].exclude[air].is_empty>:
+            - ~log "RETURN_INVALID_ITEMS: TraceID=<[trace_id]> Player=<player.name> Target=<[target_uuid]> Invalid=<[invalid_items].exclude[air].formatted>" type:warning file:plugins/Denizen/logs/refunds/refunds_<util.time_now.format[yyyy-MM-dd]>.log
             - narrate "<red>Cannot return items you didn't buy from server: <[invalid_items].exclude[air].formatted>"
 
         # Check if anything valid to process
         - if <[items_to_process].is_empty>:
+            - ~log "RETURN_FAILED: TraceID=<[trace_id]> Player=<player.name> Target=<[target_uuid]> Reason=NO_VALID_ITEMS" type:warning file:plugins/Denizen/logs/refunds/refunds_<util.time_now.format[yyyy-MM-dd]>.log
             - narrate "<red>No valid items to return!"
             - stop
 
@@ -161,10 +193,16 @@ return_items:
         - define max_balance <[target_uuid].proc[get_total_sell_cost]>
         - define balance_capacity <[max_balance].sub[<[current_balance]>]>
 
+        # Build items log with quantities for success message
+        - define success_items_log <list>
+        - foreach <[items_to_process]> key:material as:data:
+            - define success_items_log:->:<[material]>x<[data].get[quantity]>
+
         # Process refund - balance vs direct money
         - if <[total_refund]> <= <[balance_capacity]>:
             # Add all to balance
             - flag server refunds.<[target_uuid]>.balance:+:<[total_refund]>
+            - ~log "RETURN_SUCCESS: TraceID=<[trace_id]> Player=<player.name> Target=<[target_uuid]> Items=<[success_items_log].separated_by[,]> TotalRefund=$<[total_refund].format_number> ToBalance=$<[total_refund].format_number> NewBalance=$<server.flag[refunds.<[target_uuid]>.balance].format_number>" file:plugins/Denizen/logs/refunds/refunds_<util.time_now.format[yyyy-MM-dd]>.log
             - narrate "<green>Added <gold>$<[total_refund].format_number> <green>to your refund balance!"
         - else:
             # Split between balance and direct money
@@ -172,6 +210,7 @@ return_items:
             - define money_amount <[total_refund].sub[<[balance_capacity]>]>
             - flag server refunds.<[target_uuid]>.balance:<[max_balance]>
             - money give quantity:<[money_amount]> players:<player[<[target_uuid]>]>
+            - ~log "RETURN_SUCCESS: TraceID=<[trace_id]> Player=<player.name> Target=<[target_uuid]> Items=<[success_items_log].separated_by[,]> TotalRefund=$<[total_refund].format_number> ToBalance=$<[balance_amount].format_number> ToWallet=$<[money_amount].format_number> BALANCE_OVERFLOW" file:plugins/Denizen/logs/refunds/refunds_<util.time_now.format[yyyy-MM-dd]>.log
             - narrate "<green>Refund balance maxed out! Added <gold>$<[balance_amount].format_number> <green>to balance and <gold>$<[money_amount].format_number> <green>to your wallet!"
 
         # List all successfully returned items
@@ -257,6 +296,10 @@ refunds_command:
             - if <[target_uuid]> == null:
                 - narrate "<red>Player '<[target_name]>' not found in refund system!"
                 - stop
+
+            # Log admin access with trace ID
+            - define trace_id <util.random_uuid>
+            - ~log "ADMIN_ACCESS: TraceID=<[trace_id]> Admin=<player.name>(<player.uuid>) Target=<[target_name]>(<[target_uuid]>) Action=OPEN_REFUND_MENU" file:plugins/Denizen/logs/refunds/refunds_<util.time_now.format[yyyy-MM-dd]>.log
 
             # Open refund menu for the target player
             - run open_refund_menu_for_player def.target_uuid:<[target_uuid]>

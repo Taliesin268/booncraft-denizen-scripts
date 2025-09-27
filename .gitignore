@@ -9,3 +9,5 @@
 !plugins/Denizen/
 !plugins/Denizen/scripts/
 !plugins/Denizen/scripts/**
+# Un-ignore logs folder structure but not the log files
+!plugins/Denizen/logs/
