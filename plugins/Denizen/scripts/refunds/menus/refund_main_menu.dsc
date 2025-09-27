@@ -29,6 +29,10 @@ refund_main_menu_handler:
                 - case returns:
                     - run open_paged_inventory def.items:<[target_uuid].proc[get_refund_list].context[bought]> def.page:1 def.inventory:refund_return_listing def.target_uuid:<[target_uuid]> def.return_to:<context.inventory>
 
+                - case balance:
+                    - inventory close
+                    - run contribute_to_balance def.target_uuid:<[target_uuid]>
+
 refund_reclaim_menu:
     type: inventory
     inventory: chest
@@ -79,6 +83,10 @@ refund_reclaim_menu_handler:
                     - define max_quantity <server.flag[refunds.<[target_uuid]>.sold.<context.item.material.name>.quantity]>
                     - run open_quantity_determination_menu def.item:<context.item> def.unit_price:<[unit_price]> def.max_quantity:<[max_quantity]> def.return_to:<context.inventory> def.action:reclaim def.target_uuid:<[target_uuid]>
 
+                - case balance:
+                    - inventory close
+                    - run contribute_to_balance def.target_uuid:<[target_uuid]>
+
 refund_return_listing_handler:
     type: world
     events:
@@ -102,6 +110,10 @@ refund_return_listing_handler:
                     - inventory set d:<[inventory]> slot:28 o:<item[back_button].with_flag[return_to:<context.inventory>].with_flag[target_uuid:<[target_uuid]>]>
                     - inventory set d:<[inventory]> slot:36 o:<item[confirm_button].with_flag[target_uuid:<[target_uuid]>]>
                     - inventory open d:<[inventory]>
+
+                - case balance:
+                    - inventory close
+                    - run contribute_to_balance def.target_uuid:<[target_uuid]>
 
 add_refund_lore:
     type: procedure

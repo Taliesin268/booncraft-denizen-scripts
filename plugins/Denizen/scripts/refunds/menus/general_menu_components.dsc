@@ -16,6 +16,9 @@ refund_balance:
         - <&7> / <red><player.uuid.proc[get_total_sell_cost].if_null[0].proc[format_as_tokens]> tokens (cost to reclaim all)
         - <&7>These tokens are used to
         - <&7>reclaim items you sold.
+        - <&7>
+        - <&b>Click to add tokens to your balance!
+        - <&7>Max contribution: <&e><player.uuid.proc[get_total_sell_cost].if_null[0].sub[<server.flag[refunds.<player.uuid>.balance].if_null[0]>].max[0].proc[format_as_tokens]> tokens
     flags:
         action: balance
 
@@ -48,8 +51,9 @@ get_refund_balance_item:
         # Get balance data for the target UUID
         - define current_balance <server.flag[refunds.<[target_uuid]>.balance].if_null[0]>
         - define total_cost <[target_uuid].proc[get_total_sell_cost].if_null[0]>
+        - define max_contribution <[total_cost].sub[<[current_balance]>].max[0]>
 
         # Create the balance item with same format as static component
-        - define balance_item <item[sunflower].with[display=<gold>Refund Balance;lore=<&7>Current Balance: <&a><[current_balance].proc[format_as_tokens]> tokens|<&7> / <red><[total_cost].proc[format_as_tokens]> tokens (cost to reclaim all)|<&7>These tokens are used to|<&7>reclaim items you sold.;flag=action:balance]>
+        - define balance_item <item[sunflower].with[display=<gold>Refund Balance;lore=<&7>Current Balance: <&a><[current_balance].proc[format_as_tokens]> tokens|<&7> / <red><[total_cost].proc[format_as_tokens]> tokens (cost to reclaim all)|<&7>These tokens are used to|<&7>reclaim items you sold.|<&7>|<&b>Click to add tokens to your balance!|<&7>Max contribution: <&e><[max_contribution].proc[format_as_tokens]> tokens;flag=action:balance;flag=target_uuid:<[target_uuid]>]>
 
         - determine <[balance_item]>

@@ -149,6 +149,31 @@ plugins/Denizen/scripts/refunds/
 - Example: `foreach <[refund_players]> key:uuid as:player_name`
 - The key variable contains the map key, as variable contains the value
 
+#### Chat-Based Input Pattern
+- Use `on player chats flagged:flag_name` for efficient chat monitoring (more performant than checking with if statements inside the event)
+- **CRITICAL**: Always place `determine cancelled` as the LAST statement in chat handlers to prevent premature script termination
+- Pattern for collecting user input via chat:
+  ```denizen
+  # Task to initiate input collection
+  - flag player awaiting_input expire:30s
+  - flag player input_data:<any_needed_data>
+  - narrate "Type your response in chat..."
+  - wait 30s
+  - if <player.has_flag[awaiting_input]>:
+      - flag player awaiting_input:!
+      - narrate "Input timed out"
+
+  # World event to handle the input
+  on player chats flagged:awaiting_input:
+      - define input <context.message.strip_color>
+      - [validate and process input]
+      - flag player awaiting_input:!
+      - narrate "[success/error message]"
+      - determine cancelled  # MUST be last - cancels the chat message
+  ```
+- Use `strip_color` to remove formatting from chat messages
+- Store any needed data in separate flags for access in the chat handler
+
 #### Flag Behavior Gotchas
 - World event `enabled:` field checks if flag EXISTS, not its value
 - Setting `enabled: <server.has_flag[flag]>` will enable if flag has ANY value

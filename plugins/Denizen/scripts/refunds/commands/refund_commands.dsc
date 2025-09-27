@@ -442,3 +442,112 @@ tokens_to_dollars:
     script:
     # Convert tokens back to dollars (divide by 100)
     - determine <[token_amount].div[100]>
+
+# Token contribution system
+contribute_to_balance:
+    type: task
+    definitions: target_uuid
+    script:
+        # Default to current player if no UUID provided
+        - define target_uuid <player.uuid> if:!<[target_uuid].exists>
+
+        # Calculate contribution cap
+        - define current_balance <server.flag[refunds.<[target_uuid]>.balance].if_null[0]>
+        - define total_cost <[target_uuid].proc[get_total_sell_cost].if_null[0]>
+        - define max_contribution <[total_cost].sub[<[current_balance]>]>
+
+        # Check if they already have enough tokens
+        - if <[max_contribution]> <= 0:
+            - narrate "<green>You already have enough tokens to reclaim all your items!"
+            - stop
+
+        # Check if player has any money
+        - if <player.money> <= 0:
+            - narrate "<red>You don't have any money to buy tokens with!"
+            - stop
+
+        # Set flag to mark player as awaiting input
+        - flag player awaiting_contribution expire:30s
+        - flag player contribution_target_uuid:<[target_uuid]>
+        # Store max contribution in TOKENS for easier comparison
+        - flag player contribution_max:<[max_contribution].proc[dollars_to_tokens_raw]>
+
+        # Calculate how much they can actually afford
+        - define affordable_tokens <player.money.proc[dollars_to_tokens_raw]>
+        - define actual_max <[max_contribution].min[<[affordable_tokens]>]>
+
+        # Prompt player
+        - narrate "<&6>══════════════════════════"
+        - narrate "<&e><&l>BUY REFUND TOKENS"
+        - narrate "<&6>══════════════════════════"
+        - narrate "<&f>How many tokens would you like to buy?"
+        - narrate "<&7>Rate: <&a>100 tokens = $1.00"
+        - narrate "<&7>Your money: <&a>$<player.money.format_number[#,##0.00]>"
+        - narrate "<&7>Max you can buy: <&e><[actual_max].proc[format_as_tokens]> tokens"
+        - narrate ""
+        - narrate "<&b>Type the number of tokens in chat..."
+        - narrate "<&7>(You have 30 seconds)"
+        - narrate "<&6>══════════════════════════"
+
+        # Schedule timeout message
+        - wait 30s
+        - if <player.has_flag[awaiting_contribution]>:
+            - flag player awaiting_contribution:!
+            - flag player contribution_target_uuid:!
+            - flag player contribution_max:!
+            - narrate "<&c>Token purchase timed out. Open the menu again if you want to buy tokens."
+
+# Chat monitor for token contributions
+contribution_chat_monitor:
+    type: world
+    events:
+        on player chats flagged:awaiting_contribution:
+            # Get stored data
+            - define target_uuid <player.flag[contribution_target_uuid]>
+            - define max_contribution <player.flag[contribution_max]>
+
+            # Parse the input
+            - define input <context.message.strip_color>
+
+            # Check if it's a valid number
+            - if !<[input].is_decimal>:
+                - narrate "<&c>That's not a valid number! Please type a number."
+                - determine cancelled
+
+            # Convert to number and validate
+            - define requested_tokens <[input].round_down>
+
+            # Check if positive
+            - if <[requested_tokens]> <= 0:
+                - narrate "<&c>Please enter a positive number of tokens!"
+                - determine cancelled
+
+            # Calculate cost in dollars
+            - define cost <[requested_tokens].proc[tokens_to_dollars]>
+
+            # Check if player has enough money
+            - if <[cost]> > <player.money>:
+                - narrate "<&c>You don't have enough money! <[requested_tokens]> tokens costs $<[cost].format_number[#,##0.00]> but you only have $<player.money.format_number[#,##0.00]>"
+                - determine cancelled
+
+            # Check if it exceeds the contribution cap (max_contribution is already in tokens)
+            - if <[requested_tokens]> > <[max_contribution]>:
+                - narrate "<&c>You can't buy that many tokens! Maximum: <[max_contribution].format_number[#,##0]> tokens"
+                - determine cancelled
+
+            # Process the contribution
+            - money take quantity:<[cost]> players:<player>
+            - flag server refunds.<[target_uuid]>.balance:+:<[cost]>
+
+            # Clear the flags
+            - flag player awaiting_contribution:!
+            - flag player contribution_target_uuid:!
+            - flag player contribution_max:!
+
+            # Confirm success
+            - define new_balance <server.flag[refunds.<[target_uuid]>.balance]>
+            - narrate "<&a>Successfully purchased <[requested_tokens]> tokens for $<[cost].format_number[#,##0.00]>!"
+            - narrate "<&f>New token balance: <&e><[new_balance].proc[format_as_tokens]> tokens"
+
+            # Cancel the chat message
+            - determine cancelled
