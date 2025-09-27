@@ -187,13 +187,13 @@ reclaim_item:
             # Cancel if they can't afford even one
             - if <[highest_quantity_affordable]> <= 0:
                 - ~log "RECLAIM_FAILED: TraceID=<[trace_id]> Player=<player.name> Target=<[target_uuid]> Reason=INSUFFICIENT_BALANCE_ZERO Need=$<[unit_price].format_number> Have=$<[available_balance].format_number>" type:warning file:plugins/Denizen/logs/refunds/refunds_<util.time_now.format[yyyy-MM-dd]>.log
-                - narrate "<red>You do not have enough balance to reclaim any <[item_plural]>! You need at least <gold>$<[unit_price].format_number> <red>but you only have <gold>$<[available_balance].format_number><red>."
+                - narrate "<red>You do not have enough tokens to reclaim any <[item_plural]>! You need at least <gold><[unit_price].proc[format_as_tokens]> tokens <red>but you only have <gold><[available_balance].proc[format_as_tokens]> tokens<red>."
                 - stop
             # Otherwise, offer to reclaim the most they can afford
             - ~log "RECLAIM_FAILED: TraceID=<[trace_id]> Player=<player.name> Target=<[target_uuid]> Reason=INSUFFICIENT_BALANCE Need=$<[total_cost].format_number> Have=$<[available_balance].format_number> CanAfford=<[highest_quantity_affordable]>" type:warning file:plugins/Denizen/logs/refunds/refunds_<util.time_now.format[yyyy-MM-dd]>.log
             - clickable for:<player> usages:1 until:2m save:adjust_reclaim_item_quantity:
                 - run reclaim_item def.target_uuid:<[target_uuid]> def.item:<[item]> def.quantity:<[highest_quantity_affordable]>
-            - narrate "<yellow>You do not have enough money to reclaim that many items! You need <gold>$<[total_cost].format_number> <yellow>but you only have <gold>$<[available_balance].format_number><yellow>. You could afford <red><[highest_quantity_affordable].format_number><yellow> of these items. Click <green><bold><element[here].on_click[<entry[adjust_reclaim_item_quantity].command>]><yellow> to reclaim that many."
+            - narrate "<yellow>You do not have enough tokens to reclaim that many items! You need <gold><[total_cost].proc[format_as_tokens]> tokens <yellow>but you only have <gold><[available_balance].proc[format_as_tokens]> tokens<yellow>. You could afford <red><[highest_quantity_affordable].format_number><yellow> of these items. Click <green><bold><element[here].on_click[<entry[adjust_reclaim_item_quantity].command>]><yellow> to reclaim that many."
             - stop
         # Give items to current player with leftover tracking
         - give <item[<[material]>]> quantity:<[quantity]> ignore_leftovers save:give_result
@@ -229,8 +229,8 @@ reclaim_item:
         - else:
             - ~log "RECLAIM_SUCCESS: TraceID=<[trace_id]> Player=<player.name> Target=<[target_uuid]> Item=<[material]> Qty=<[actual_quantity]> Cost=$<[actual_cost].format_number> NewBalance=$<[remaining_balance].format_number>" file:plugins/Denizen/logs/refunds/refunds_<util.time_now.format[yyyy-MM-dd]>.log
 
-        - narrate "Successfully reclaimed <green><[actual_quantity].format_number> <gray>x <green><[material]> <gray>for <green>$<[actual_cost].format_number><gray>!"
-        - narrate "Remaining refund balance: <gold>$<[remaining_balance].format_number>"
+        - narrate "Successfully reclaimed <green><[actual_quantity].format_number> <gray>x <green><[material]> <gray>for <green><[actual_cost].proc[format_as_tokens]> tokens<gray>!"
+        - narrate "Remaining refund tokens: <gold><[remaining_balance].proc[format_as_tokens]> tokens"
 
         # If some items didn't fit, inform the player
         - if <[total_leftover]> > 0:
@@ -315,7 +315,7 @@ return_items:
             # Add all to balance
             - flag server refunds.<[target_uuid]>.balance:+:<[total_refund]>
             - ~log "RETURN_SUCCESS: TraceID=<[trace_id]> Player=<player.name> Target=<[target_uuid]> Items=<[success_items_log].separated_by[,]> TotalRefund=$<[total_refund].format_number> ToBalance=$<[total_refund].format_number> NewBalance=$<server.flag[refunds.<[target_uuid]>.balance].format_number>" file:plugins/Denizen/logs/refunds/refunds_<util.time_now.format[yyyy-MM-dd]>.log
-            - narrate "<green>Added <gold>$<[total_refund].format_number> <green>to your refund balance!"
+            - narrate "<green>Added <gold><[total_refund].proc[format_as_tokens]> tokens <green>to your refund balance!"
         - else:
             # Split between balance and direct money
             - define balance_amount <[balance_capacity]>
@@ -323,7 +323,7 @@ return_items:
             - flag server refunds.<[target_uuid]>.balance:<[max_balance]>
             - money give quantity:<[money_amount]> players:<player[<[target_uuid]>]>
             - ~log "RETURN_SUCCESS: TraceID=<[trace_id]> Player=<player.name> Target=<[target_uuid]> Items=<[success_items_log].separated_by[,]> TotalRefund=$<[total_refund].format_number> ToBalance=$<[balance_amount].format_number> ToWallet=$<[money_amount].format_number> BALANCE_OVERFLOW" file:plugins/Denizen/logs/refunds/refunds_<util.time_now.format[yyyy-MM-dd]>.log
-            - narrate "<green>Refund balance maxed out! Added <gold>$<[balance_amount].format_number> <green>to balance and <gold>$<[money_amount].format_number> <green>to your wallet!"
+            - narrate "<green>Refund tokens maxed out! Added <gold><[balance_amount].proc[format_as_tokens]> tokens <green>to balance and <gold>$<[money_amount].format_number> <green>to your wallet!"
 
         # List all successfully returned items
         - narrate "<gray>Items returned:"
@@ -419,3 +419,26 @@ refunds_command:
 
         - else:
             - narrate "<red>Usage: /refunds [admin <&lt>player<&gt>]"
+
+# Token conversion helper procedures
+format_as_tokens:
+    type: procedure
+    definitions: dollar_amount
+    script:
+    # Convert dollars to tokens (multiply by 100) and format as integer
+    - define tokens <[dollar_amount].mul[100].round>
+    - determine <[tokens].format_number[#,##0]>
+
+dollars_to_tokens_raw:
+    type: procedure
+    definitions: dollar_amount
+    script:
+    # Convert dollars to tokens without formatting (for calculations)
+    - determine <[dollar_amount].mul[100].round>
+
+tokens_to_dollars:
+    type: procedure
+    definitions: token_amount
+    script:
+    # Convert tokens back to dollars (divide by 100)
+    - determine <[token_amount].div[100]>

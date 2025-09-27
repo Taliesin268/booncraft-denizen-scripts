@@ -49,7 +49,7 @@ add_quantity_item_lore:
             - if <[price]> > <[unit_price].mul[<[max_quantity]>]>:
                 - define price <[unit_price].mul[<[max_quantity]>]>
                 - define price_prefix " <red>(capped at price for <[max_quantity]> items)"
-        - determine <item[<[item]>].with[display_name=Click to claim this many items!].with[lore=Price (each): <&a>$<[unit_price]>|<bold>Price (total): <green>$<[price]><[price_prefix]>;flag=max_quantity:<[max_quantity]>;flag=unit_price:<[unit_price]>]>
+        - determine <item[<[item]>].with[display_name=Click to claim this many items!].with[lore=Cost (each): <&a><[unit_price].proc[format_as_tokens]> tokens|<bold>Cost (total): <green><[price].proc[format_as_tokens]> tokens<[price_prefix]>;flag=max_quantity:<[max_quantity]>;flag=unit_price:<[unit_price]>]>
 
 swap_to_stacks:
     type: item

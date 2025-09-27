@@ -6,12 +6,12 @@ refund_introduction_book:
     text:
     - <&0><&l>Important Notice<n><n><&0><player.name>,<n><n>We've made significant changes to our economy system that affect everyone on the server.<n><n>Please read this guide carefully to understand your options.
     - <&4><&l>What Changed?<n><n><&0>• All NPC shops have been permanently removed<n><n>• The server economy has been reset<n><n>• A new refund system has been implemented to help you recover your items
-    - <&2><&l>Your Refund Balance<n><n><&0>All money you earned from selling items to NPCs has been converted into a <&a>Refund Balance<&0>.<n><n>This balance can ONLY be used to reclaim items you previously sold.
-    - <&9><&l>Your Statistics<n><n><&0>• <&a>Refund Balance:<&0> $<server.flag[refunds.<player.uuid>.balance].if_null[0].format_number><n>• <&6>Total Sold Value:<&0> $<player.uuid.proc[get_total_sell_cost].format_number><n>• <&b>Items Sold:<&0> <server.flag[refunds.<player.uuid>.sold].if_null[<map>].size> types<n>• <&d>Items Bought:<&0> <server.flag[refunds.<player.uuid>.bought].if_null[<map>].size> types<n><n><element[<&b><&l>Click here to open menu].on_click[/refunds]>
+    - <&2><&l>Your Refund Tokens<n><n><&0>All money you earned from selling items to NPCs has been converted into <&a>Refund Tokens<&0>.<n><n>These tokens can ONLY be used to reclaim items you previously sold.
+    - <&9><&l>Your Statistics<n><n><&0>• <&a>Refund Tokens:<&0> <server.flag[refunds.<player.uuid>.balance].if_null[0].proc[format_as_tokens]><n>• <&6>Tokens Needed:<&0> <player.uuid.proc[get_total_sell_cost].proc[format_as_tokens]><n>• <&b>Items Sold:<&0> <server.flag[refunds.<player.uuid>.sold].if_null[<map>].size> types<n>• <&d>Items Bought:<&0> <server.flag[refunds.<player.uuid>.bought].if_null[<map>].size> types<n><n><element[<&b><&l>Click here to open menu].on_click[/refunds]>
     - <&9><&l>The /refunds Command<n><n><&0>Type <element[<&b>/refunds].on_click[/refunds]><&0> to access the refund menu where you can:<n><n>• <&a>Reclaim<&0> items you sold<n>• <&b>Return<&0> items you bought
-    - <&6><&l>Reclaiming Items<n><n><&0>Use your refund balance to buy back items you sold at the exact price you sold them for.<n><n>Your balance can ONLY be used for this purpose.
-    - <&5><&l>Returning Items<n><n><&0>You can return items you bought from NPCs for the price you paid.<n><n>This will add to your refund balance.
-    - <&c><&l>Important!<n><n><&0>If you return items you bought, your refund balance may exceed what you need.<n><n>The excess will be given as regular money you can use freely!
+    - <&6><&l>Reclaiming Items<n><n><&0>Use your refund tokens to buy back items you sold at the exact price you sold them for.<n><n>As you reclaim items, the total tokens you need will decrease - so don't be afraid to reclaim the items you want!
+    - <&5><&l>Returning Items<n><n><&0>You can return items you bought from NPCs for the price you paid.<n><n>This will add to your refund tokens.
+    - <&c><&l>Important!<n><n><&0>If you return items and fill your required token balance, any extra tokens will be redeemed at 1¢ each.<n><n>This means excess tokens become regular money you can use freely!
     - <&d><&l>Admin Support<n><n><&0>If you have questions or issues with the refund system, please contact an admin.<n><n>We're here to help ensure a smooth transition.
     - <&6><&l>Final Notes<n><n><&0>This system ensures everyone can recover their items fairly.<n><n>The economy reset gives us all a fresh start with better balance.<p><&0>Good luck!<n><&c>- Aldriex
 

@@ -77,8 +77,8 @@ refund_clerk_show_balance:
         - narrate "<&6>══════════════════════════"
         - narrate "<&e><&l>YOUR BALANCE"
         - narrate "<&6>══════════════════════════"
-        - narrate "<&f>Current Balance: <&a>$<[balance].format_number[#,##0.00]>"
-        - narrate "<&f>Total Cost to Reclaim All: <&c>$<[total_cost].format_number[#,##0.00]>"
+        - narrate "<&f>Current Balance: <&a><[balance].proc[format_as_tokens]> tokens"
+        - narrate "<&f>Total Cost to Reclaim All: <&c><[total_cost].proc[format_as_tokens]> tokens"
         - narrate ""
         - clickable save:open_menu for:<player> until:30s:
             - run open_refund_menu_for_player def.target_uuid:<player.uuid>
@@ -178,7 +178,7 @@ refund_clerk_admin_menu:
 
             # Get basic stats for display
             - define balance <server.flag[refunds.<[uuid]>.balance].if_null[0]>
-            - narrate "<element[<&e><[player_name]>].on_click[<entry[admin_view_<[uuid]>].command>]> <&7>- Balance: $<[balance].format_number[#,##0.00]>"
+            - narrate "<element[<&e><[player_name]>].on_click[<entry[admin_view_<[uuid]>].command>]> <&7>- Balance: <[balance].proc[format_as_tokens]> tokens"
 
         - narrate ""
 
