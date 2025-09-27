@@ -14,17 +14,25 @@ refund_clerk_interact:
             proximity trigger:
                 entry:
                     script:
-                    # Only greet players with refund data
-                    - if <server.has_flag[refunds.<player.uuid>.sold]> || <server.has_flag[refunds.<player.uuid>.bought]>:
-                        # Check if we've already greeted recently (avoid spam)
-                        - if !<player.has_flag[refund_npc_greeted]>:
-                            - narrate "<&e>[Refund Clerk] <&f>Hello <player.name>! Click me to access your refunds."
-                            - flag player refund_npc_greeted expire:5m
+                    # Only greet if system is enabled OR player is admin
+                    - if <server.has_flag[refunds.enabled]> || <player.has_permission[refunds.admin]>:
+                        # Only greet players with refund data
+                        - if <server.has_flag[refunds.<player.uuid>.sold]> || <server.has_flag[refunds.<player.uuid>.bought]>:
+                            # Check if we've already greeted recently (avoid spam)
+                            - if !<player.has_flag[refund_npc_greeted]>:
+                                - narrate "<&e>[Refund Clerk] <&f>Hello <player.name>! Click me to access your refunds."
+                                - flag player refund_npc_greeted expire:5m
 
             click trigger:
                 script:
-                # Ignore players without refund data
+                # Check if system is enabled OR player is admin
+                - if !<server.has_flag[refunds.enabled]> && !<player.has_permission[refunds.admin]>:
+                    - narrate "<&e>[Refund Clerk] <&c>Sorry <player.name>, this isn't ready yet!"
+                    - stop
+
+                # Check if player has refund data
                 - if !<server.has_flag[refunds.<player.uuid>.sold]> && !<server.has_flag[refunds.<player.uuid>.bought]>:
+                    - narrate "<&e>[Refund Clerk] <&c>Sorry, you have nothing to return!"
                     - stop
 
                 # Show main menu
