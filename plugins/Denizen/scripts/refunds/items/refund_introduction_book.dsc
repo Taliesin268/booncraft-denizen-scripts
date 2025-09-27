@@ -10,9 +10,8 @@ refund_introduction_book:
     - <&9><&l>Your Statistics<n><n><&0>• <&a>Refund Balance:<&0> $<server.flag[refunds.<player.uuid>.balance].if_null[0].format_number><n>• <&6>Total Sold Value:<&0> $<player.uuid.proc[get_total_sell_cost].format_number><n>• <&b>Items Sold:<&0> <server.flag[refunds.<player.uuid>.sold].if_null[<map>].size> types<n>• <&d>Items Bought:<&0> <server.flag[refunds.<player.uuid>.bought].if_null[<map>].size> types<n><n><element[<&b><&l>Click here to open menu].on_click[/refunds]>
     - <&9><&l>The /refunds Command<n><n><&0>Type <element[<&b>/refunds].on_click[/refunds]><&0> to access the refund menu where you can:<n><n>• <&a>Reclaim<&0> items you sold<n>• <&b>Return<&0> items you bought
     - <&6><&l>Reclaiming Items<n><n><&0>Use your refund balance to buy back items you sold at the exact price you sold them for.<n><n>Your balance can ONLY be used for this purpose.
-    - <&5><&l>Returning Items<n><n><&0>You can return items you bought from NPCs for the price you paid.<n><n>This increases your refund balance, allowing you to reclaim more items.
+    - <&5><&l>Returning Items<n><n><&0>You can return items you bought from NPCs for the price you paid.<n><n>This will add to your refund balance.
     - <&c><&l>Important!<n><n><&0>If you return items you bought, your refund balance may exceed what you need.<n><n>The excess will be given as regular money you can use freely!
-    - <&2><&l>Strategy Tip<n><n><&0>To maximize recovery:<p>1. Return expensive items you don't need<n>2. Use the balance to reclaim valuable items you sold
     - <&d><&l>Admin Support<n><n><&0>If you have questions or issues with the refund system, please contact an admin.<n><n>We're here to help ensure a smooth transition.
     - <&6><&l>Final Notes<n><n><&0>This system ensures everyone can recover their items fairly.<n><n>The economy reset gives us all a fresh start with better balance.<p><&0>Good luck!<n><&c>- Aldriex
 
@@ -25,7 +24,7 @@ give_refund_book:
         # Check if player has refund data
         - define has_sold <server.has_flag[refunds.<player.uuid>.sold]>
         - define has_bought <server.has_flag[refunds.<player.uuid>.bought]>
-        - define has_balance <server.flag[refunds.<player.uuid>.balance].if_null[0]> > 0
+        - define has_balance "<server.flag[refunds.<player.uuid>.balance].if_null[0]> > 0"
 
         # Only proceed if player has any refund data
         - if !<[has_sold]> && !<[has_bought]> && !<[has_balance]>:

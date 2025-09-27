@@ -165,6 +165,43 @@ plugins/Denizen/scripts/refunds/
 - Scripts: `plugins/Denizen/scripts/` subdirectories
 - Logs: `plugins/Denizen/logs/` with daily rotation
 
+#### Citizens2 NPC Integration
+- Assignments link NPCs to interact scripts: `type: assignment`
+- Interact scripts contain triggers: `type: interact`
+- Structure: Assignment → interact scripts → steps → triggers
+- Common triggers: proximity, click, chat
+- Enable triggers: `trigger name:proximity state:true radius:5`
+- Assign to NPC: `/npc assignment set assignment_name`
+
+#### NPC Interact Script Structure
+- Proximity triggers must be in interact scripts, NOT assignment actions
+- Correct structure:
+  ```
+  assignment:
+      interact scripts:
+          - my_interact
+  my_interact:
+      type: interact
+      steps:
+          1:
+              proximity trigger:
+                  entry:
+                      script:
+                      - commands here
+  ```
+
+#### Cooldown Patterns
+- Use expiring flags: `flag player cooldown_name expire:5m`
+- Check cooldown: `<player.has_flag[cooldown_name]>`
+- Show remaining time: `<player.flag_expiration[cooldown_name].from_now.formatted>`
+- Common for preventing spam or limiting item distribution
+
+#### Pagination in Menus
+- Calculate indices: `start_index = (page-1) * items_per_page + 1`
+- Use foreach with counter to skip/stop at right items
+- Clickable "Show more" that runs same task with next page
+- Pass page as definition: `run task def.page:<[next_page]>`
+
 ### Testing Changes
 - Reload scripts: `/ex reload`
 - Check for errors: `/ex debug`
