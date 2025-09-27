@@ -86,6 +86,33 @@ plugins/Denizen/scripts/refunds/
 - Aggregate stacks by material using maps in foreach loops
 - Balance overflow pattern: split refunds between balance capacity and direct money payments
 
+#### Book Creation and Text Formatting
+- Use `type: book` containers with `title`, `author`, `signed`, and `text` fields
+- Each page is a list item under `text:`
+- Color codes: `<&0>` (black) through `<&f>` (white), `<&l>` (bold), `<&o>` (italic)
+- Line breaks: `<n>` for new line, `<p>` for paragraph break
+- Clickable elements in books: `<element[text].on_click[command]>`
+- Dynamic values in books: Tags like `<player.name>` work in book text
+- Books can have custom lore when given as items
+
+#### World Events
+- Use `type: world` for server-wide event handlers
+- Common pattern: `on player joins:` with `- wait 2s` for load safety
+- Track one-time actions with server flags (e.g., `server.flag[refunds.book_given.<player.uuid>]`)
+- World events handle player interactions, entity events, and server events
+
+#### Clickable Commands
+- `clickable save:name for:<player> until:duration` creates temporary clickable actions
+- Access saved clickables with `<entry[name].command>`
+- Inline clickables: `<element[text].on_click[command]>` for immediate use
+- Clickables expire after the specified duration (e.g., `until:5m`)
+
+#### Advanced Item Operations
+- Add custom lore to items: `.with[lore=Line 1|Line 2|Line 3]`
+- Use color codes and formatting in lore text
+- Dynamic lore with tags: include player data, timestamps, etc.
+- Combine multiple item modifications in one expression
+
 ### Testing Changes
 - Reload scripts: `/ex reload`
 - Check for errors: `/ex debug`
@@ -113,3 +140,4 @@ plugins/Denizen/scripts/refunds/
 - Map structures for complex item data storage
 - Procedures for data calculations (`get_total_sell_cost`, `balance_refunds`)
 - Looks like to get the return of a task, you need to use <entry[save_name].created_queue.determination>
+- Denizen in general doesn't recommend using the `- execute` command for commands you've made in Denizen. It should be reserved for external commands. For Denizen commands, just use `- run`
