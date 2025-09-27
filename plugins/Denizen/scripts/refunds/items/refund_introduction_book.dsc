@@ -64,6 +64,7 @@ give_refund_book:
 # World event to trigger on player join
 refund_book_on_join:
     type: world
+    enabled: <server.has_flag[refunds.enabled]>
     events:
         on player joins:
             # Small delay to ensure player is fully loaded
