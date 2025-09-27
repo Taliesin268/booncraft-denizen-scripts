@@ -20,6 +20,8 @@ refund_introduction_book:
 give_refund_book:
     type: task
     script:
+        - define trace_id <util.random_uuid>
+
         # Check if player has refund data
         - define has_sold <server.has_flag[refunds.<player.uuid>.sold]>
         - define has_bought <server.has_flag[refunds.<player.uuid>.bought]>
@@ -27,16 +29,22 @@ give_refund_book:
 
         # Only proceed if player has any refund data
         - if !<[has_sold]> && !<[has_bought]> && !<[has_balance]>:
+            - ~log "REFUND_BOOK_SKIP: TraceID=<[trace_id]> Player=<player.name>(<player.uuid>) Reason=NO_REFUND_DATA" file:plugins/Denizen/logs/refunds/refunds_<util.time_now.format[yyyy-MM-dd]>.log
             - stop
 
         # Check if player has already received the book
         - if !<server.has_flag[refunds.book_given.<player.uuid>]>:
+            - ~log "REFUND_BOOK_GENERATION: TraceID=<[trace_id]> Player=<player.name>(<player.uuid>) HasSold=<[has_sold]> HasBought=<[has_bought]> Balance=$<server.flag[refunds.<player.uuid>.balance].if_null[0].format_number>" file:plugins/Denizen/logs/refunds/refunds_<util.time_now.format[yyyy-MM-dd]>.log
+
             # Create the book with custom lore
             - define book <item[refund_introduction_book].with[lore=<&7>Generated for: <&e><player.name>|<&7>Date: <&e><util.time_now.format[yyyy-MM-dd]>|<&7>|<&6>This book contains important|<&6>information about your refunds.]>
             # Give the book
             - give <[book]>
             # Mark as given
             - flag server refunds.book_given.<player.uuid>:true
+
+            - ~log "REFUND_BOOK_DELIVERED: TraceID=<[trace_id]> Player=<player.name>(<player.uuid>) GenerationDate=<util.time_now.format[yyyy-MM-dd]> GenerationTime=<util.time_now.format[HH:mm:ss]>" file:plugins/Denizen/logs/refunds/refunds_<util.time_now.format[yyyy-MM-dd]>.log
+
             # Send welcome message with clickable
             - clickable save:open_refunds for:<player> until:5m:
                 - run open_refund_menu_for_player def.target_uuid:<player.uuid>
@@ -50,6 +58,8 @@ give_refund_book:
             - narrate "<&f>"
             - narrate "<&f>Quick Start: <element[<&b><&l>Click here to open your refund menu!].on_click[<entry[open_refunds].command>]>"
             - narrate "<&6>═══════════════════════════════"
+        - else:
+            - ~log "REFUND_BOOK_SKIP: TraceID=<[trace_id]> Player=<player.name>(<player.uuid>) Reason=ALREADY_RECEIVED" file:plugins/Denizen/logs/refunds/refunds_<util.time_now.format[yyyy-MM-dd]>.log
 
 # World event to trigger on player join
 refund_book_on_join:

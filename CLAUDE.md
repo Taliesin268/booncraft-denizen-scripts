@@ -65,6 +65,7 @@ plugins/Denizen/scripts/refunds/
 - Use `if_null[default_value]` for safe flag access
 - Check existence with `.exists` before operations
 - Use `clickable` command for interactive error messages
+- **Player existence check**: Use `!<[player].has_played_before.if_null[false]>` to check if player exists (not `== null`)
 
 #### Advanced List Operations
 - `parse[tag]` transforms each list element (like map() in other languages)
@@ -112,6 +113,26 @@ plugins/Denizen/scripts/refunds/
 - Use color codes and formatting in lore text
 - Dynamic lore with tags: include player data, timestamps, etc.
 - Combine multiple item modifications in one expression
+
+#### Number Formatting
+- Use `format_number[#,##0.00]` for decimal formatting (e.g., 1234.5 → 1,234.50)
+- Common patterns: `#,##0.00` (2 decimals), `#,##0` (no decimals)
+- Refer to Java DecimalFormat for advanced patterns
+
+#### Logging Best Practices
+- Use trace IDs for tracking related operations: `<util.random_uuid>`
+- Log to dated files: `file:plugins/Denizen/logs/refunds/refunds_<util.time_now.format[yyyy-MM-dd]>.log`
+- Log levels: info (default), warning (`type:warning`)
+- Include context: Player names, UUIDs, operation results, timestamps
+- Batch operations should have unique batch IDs for tracking
+- Use `~log` prefix to make logging async and prevent blocking
+
+#### Batch Processing Pattern
+- Use existing procedures like `get_refund_players` to get data sets
+- Track processed/skipped counts for reporting
+- Provide progress updates for long operations (every N items)
+- Use one-time flags to prevent duplicate processing
+- Example: `server.flag[refunds.balance_processed.<uuid>]`
 
 ### Testing Changes
 - Reload scripts: `/ex reload`

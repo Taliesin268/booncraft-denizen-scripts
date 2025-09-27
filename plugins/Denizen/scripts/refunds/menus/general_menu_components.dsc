@@ -12,8 +12,8 @@ refund_balance:
     material: sunflower
     display name: <gold>Refund Balance
     lore:
-        - <&7>Current Balance: <&a>$<server.flag[refunds.<player.uuid>.balance].if_null[0].format_number>
-        - <&7> / <red>$<player.uuid.proc[get_total_sell_cost].if_null[0].format_number> (cost to reclaim all)
+        - <&7>Current Balance: <&a>$<server.flag[refunds.<player.uuid>.balance].if_null[0].format_number[#,##0.00]>
+        - <&7> / <red>$<player.uuid.proc[get_total_sell_cost].if_null[0].format_number[#,##0.00]> (cost to reclaim all)
         - <&7>This balance is used to
         - <&7>reclaim items you sold.
     flags:
@@ -50,6 +50,6 @@ get_refund_balance_item:
         - define total_cost <[target_uuid].proc[get_total_sell_cost].if_null[0]>
 
         # Create the balance item with same format as static component
-        - define balance_item <item[sunflower].with[display=<gold>Refund Balance;lore=<&7>Current Balance: <&a>$<[current_balance].format_number>|<&7> / <red>$<[total_cost].format_number> (cost to reclaim all)|<&7>This balance is used to|<&7>reclaim items you sold.;flag=action:balance]>
+        - define balance_item <item[sunflower].with[display=<gold>Refund Balance;lore=<&7>Current Balance: <&a>$<[current_balance].format_number[#,##0.00]>|<&7> / <red>$<[total_cost].format_number[#,##0.00]> (cost to reclaim all)|<&7>This balance is used to|<&7>reclaim items you sold.;flag=action:balance]>
 
         - determine <[balance_item]>

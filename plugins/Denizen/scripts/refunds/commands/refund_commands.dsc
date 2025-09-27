@@ -11,22 +11,94 @@ import_refund_data:
 
 balance_refunds:
     type: task
-    definitions: player_name
+    definitions: player_uuid
     script:
-    - define target <server.match_offline_player[<[player_name]>]>
-    - define available_funds <[target].money>
-    - if !<server.flag[refunds.<[target].uuid>.sold].exists>:
+    - define trace_id <util.random_uuid>
+
+    # Check if balance refund has already been processed for this player
+    - if <server.has_flag[refunds.balance_processed.<[player_uuid]>]>:
+        - ~log "BALANCE_REFUND_SKIP: TraceID=<[trace_id]> UUID=<[player_uuid]> Reason=ALREADY_PROCESSED" file:plugins/Denizen/logs/refunds/refunds_<util.time_now.format[yyyy-MM-dd]>.log
         - stop
-    - define total_sold_items_price <[target].uuid.proc[get_total_sell_cost]>
-    - define remaining_debt <[total_sold_items_price].sub[<server.flag[refunds.<[target].uuid>.balance].if_null[0]>]>
+
+    - define target <player[<[player_uuid]>].if_null[null]>
+    - if !<[target].has_played_before.if_null[false]>:
+        - ~log "BALANCE_REFUND_SKIP: TraceID=<[trace_id]> UUID=<[player_uuid]> Reason=PLAYER_NOT_FOUND" type:warning file:plugins/Denizen/logs/refunds/refunds_<util.time_now.format[yyyy-MM-dd]>.log
+        - stop
+
+    - define player_name <[target].name>
+    - define available_funds <[target].money>
+
+    - if !<server.flag[refunds.<[player_uuid]>.sold].exists>:
+        - ~log "BALANCE_REFUND_SKIP: TraceID=<[trace_id]> Player=<[player_name]>(<[player_uuid]>) Reason=NO_SOLD_DATA" file:plugins/Denizen/logs/refunds/refunds_<util.time_now.format[yyyy-MM-dd]>.log
+        - stop
+
+    - define total_sold_items_price <[player_uuid].proc[get_total_sell_cost]>
+    - define current_balance <server.flag[refunds.<[player_uuid]>.balance].if_null[0]>
+    - define remaining_debt <[total_sold_items_price].sub[<[current_balance]>]>
+
+    - ~log "BALANCE_REFUND_ATTEMPT: TraceID=<[trace_id]> Player=<[player_name]>(<[player_uuid]>) AvailableFunds=$<[available_funds].format_number> RemainingDebt=$<[remaining_debt].format_number> CurrentBalance=$<[current_balance].format_number>" file:plugins/Denizen/logs/refunds/refunds_<util.time_now.format[yyyy-MM-dd]>.log
+
     # If the player has enough money to cover the remaining debt, take it all and clear their debt.
     - if <[available_funds]> >= <[remaining_debt]>:
         - money take quantity:<[remaining_debt]> players:<[target]>
-        - flag server refunds.<[target].uuid>.balance:+:<[remaining_debt]>
+        - flag server refunds.<[player_uuid]>.balance:+:<[remaining_debt]>
+        - define new_balance <server.flag[refunds.<[player_uuid]>.balance]>
+        - ~log "BALANCE_REFUND_SUCCESS: TraceID=<[trace_id]> Player=<[player_name]>(<[player_uuid]>) Type=FULL_PAYMENT MoneyTaken=$<[remaining_debt].format_number> NewBalance=$<[new_balance].format_number>" file:plugins/Denizen/logs/refunds/refunds_<util.time_now.format[yyyy-MM-dd]>.log
     # If the player doesn't have enough money, take what they have and update their debt accordingly.
     - else:
         - money set quantity:0 players:<[target]>
-        - flag server refunds.<[target].uuid>.balance:+:<[available_funds]>
+        - flag server refunds.<[player_uuid]>.balance:+:<[available_funds]>
+        - define new_balance <server.flag[refunds.<[player_uuid]>.balance]>
+        - ~log "BALANCE_REFUND_SUCCESS: TraceID=<[trace_id]> Player=<[player_name]>(<[player_uuid]>) Type=PARTIAL_PAYMENT MoneyTaken=$<[available_funds].format_number> NewBalance=$<[new_balance].format_number> RemainingDebt=$<[remaining_debt].sub[<[available_funds]>].format_number>" file:plugins/Denizen/logs/refunds/refunds_<util.time_now.format[yyyy-MM-dd]>.log
+
+    # Mark this player's balance as processed
+    - flag server refunds.balance_processed.<[player_uuid]>:true
+
+balance_refunds_for_all:
+    type: task
+    script:
+    - define batch_trace_id <util.random_uuid>
+    - define initiator <player.name.if_null[CONSOLE]>
+    - define initiator_uuid <player.uuid.if_null[CONSOLE]>
+
+    # Get all players with refund data using existing procedure
+    - define refund_players <proc[get_refund_players]>
+    - if <[refund_players].is_empty>:
+        - narrate "<&c>No players with refund data found."
+        - ~log "BALANCE_REFUND_BATCH: BatchID=<[batch_trace_id]> Initiator=<[initiator]>(<[initiator_uuid]>) Result=NO_PLAYERS_FOUND" type:warning file:plugins/Denizen/logs/refunds/refunds_<util.time_now.format[yyyy-MM-dd]>.log
+        - stop
+
+    - define all_uuids <[refund_players].keys>
+    - define processed_count 0
+    - define skipped_count 0
+    - define total_count <[all_uuids].size>
+
+    - ~log "BALANCE_REFUND_BATCH_START: BatchID=<[batch_trace_id]> Initiator=<[initiator]>(<[initiator_uuid]>) TotalPlayers=<[total_count]>" file:plugins/Denizen/logs/refunds/refunds_<util.time_now.format[yyyy-MM-dd]>.log
+
+    - narrate "<&6>Starting balance refund processing for <[total_count]> players..."
+
+    # Process each player
+    - foreach <[all_uuids]> as:uuid:
+        # Check if this player has already been processed
+        - if <server.has_flag[refunds.balance_processed.<[uuid]>]>:
+            - define skipped_count:+:1
+            - foreach next
+
+        # Run balance_refunds for this player
+        - run balance_refunds def.player_uuid:<[uuid]>
+        - define processed_count:+:1
+
+        # Progress update every 10 players
+        - if <[loop_index].mod[10]> == 0:
+            - narrate "<&7>Progress: <[loop_index]>/<[total_count]> players processed..."
+            - ~log "BALANCE_REFUND_BATCH_PROGRESS: BatchID=<[batch_trace_id]> Progress=<[loop_index]>/<[total_count]>" file:plugins/Denizen/logs/refunds/refunds_<util.time_now.format[yyyy-MM-dd]>.log
+
+    - ~log "BALANCE_REFUND_BATCH_COMPLETE: BatchID=<[batch_trace_id]> Initiator=<[initiator]>(<[initiator_uuid]>) Processed=<[processed_count]> Skipped=<[skipped_count]> Total=<[total_count]>" file:plugins/Denizen/logs/refunds/refunds_<util.time_now.format[yyyy-MM-dd]>.log
+
+    - narrate "<&a>Balance refund processing complete!"
+    - narrate "<&e>Processed: <&f><[processed_count]> players"
+    - narrate "<&e>Skipped (already processed): <&f><[skipped_count]> players"
+    - narrate "<&e>Total: <&f><[total_count]> players"
 
 get_total_sell_cost:
     type: procedure
