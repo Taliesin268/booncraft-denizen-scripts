@@ -134,6 +134,21 @@ plugins/Denizen/scripts/refunds/
 - Use one-time flags to prevent duplicate processing
 - Example: `server.flag[refunds.balance_processed.<uuid>]`
 
+#### World Event Control
+- Use `enabled: <server.has_flag[flag_name]>` in world event definitions for toggleable features
+- Alternative: Check flag in event handler with `if !<server.has_flag[flag]>: stop`
+- Example: Control book distribution on player join with server flags
+
+#### External Command Integration
+- Use `execute as_server "command"` for external commands (LuckPerms, vanilla MC, etc.)
+- Use `run` for Denizen-defined tasks and commands
+- Common pattern: Integrate with permission plugins via execute
+
+#### Advanced Foreach Patterns
+- Use `foreach <map> key:var1 as:var2` to iterate maps with key/value pairs
+- Example: `foreach <[refund_players]> key:uuid as:player_name`
+- The key variable contains the map key, as variable contains the value
+
 ### Testing Changes
 - Reload scripts: `/ex reload`
 - Check for errors: `/ex debug`

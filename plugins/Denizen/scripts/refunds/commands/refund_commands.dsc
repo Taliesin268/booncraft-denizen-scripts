@@ -100,6 +100,46 @@ balance_refunds_for_all:
     - narrate "<&e>Skipped (already processed): <&f><[skipped_count]> players"
     - narrate "<&e>Total: <&f><[total_count]> players"
 
+setup_refunds_luckperms_group:
+    type: task
+    script:
+    - define trace_id <util.random_uuid>
+    - define initiator <player.name.if_null[CONSOLE]>
+    - define initiator_uuid <player.uuid.if_null[CONSOLE]>
+
+    # Create the LuckPerms group
+    - execute as_server "lp creategroup has_refunds"
+    - ~log "LUCKPERMS_GROUP_SETUP: TraceID=<[trace_id]> Initiator=<[initiator]>(<[initiator_uuid]>) Action=CREATE_GROUP GroupName=has_refunds" file:plugins/Denizen/logs/refunds/refunds_<util.time_now.format[yyyy-MM-dd]>.log
+
+    # Get all players with refund data
+    - define refund_players <proc[get_refund_players]>
+    - if <[refund_players].is_empty>:
+        - narrate "<&c>No players with refund data found."
+        - ~log "LUCKPERMS_GROUP_SETUP: TraceID=<[trace_id]> Result=NO_PLAYERS_FOUND" type:warning file:plugins/Denizen/logs/refunds/refunds_<util.time_now.format[yyyy-MM-dd]>.log
+        - stop
+
+    - define total_count <[refund_players].size>
+    - define added_count 0
+
+    - narrate "<&6>Adding <[total_count]> players to has_refunds group..."
+    - ~log "LUCKPERMS_GROUP_SETUP_START: TraceID=<[trace_id]> TotalPlayers=<[total_count]>" file:plugins/Denizen/logs/refunds/refunds_<util.time_now.format[yyyy-MM-dd]>.log
+
+    # Add each player to the group
+    - foreach <[refund_players]> key:uuid as:player_name:
+        - execute as_server "lp user <[player_name]> parent add has_refunds"
+        - define added_count:+:1
+
+        # Progress update every 10 players
+        - if <[loop_index].mod[10]> == 0:
+            - narrate "<&7>Progress: <[loop_index]>/<[total_count]> players added..."
+            - ~log "LUCKPERMS_GROUP_SETUP_PROGRESS: TraceID=<[trace_id]> Progress=<[loop_index]>/<[total_count]>" file:plugins/Denizen/logs/refunds/refunds_<util.time_now.format[yyyy-MM-dd]>.log
+
+    - ~log "LUCKPERMS_GROUP_SETUP_COMPLETE: TraceID=<[trace_id]> Initiator=<[initiator]>(<[initiator_uuid]>) PlayersAdded=<[added_count]> Total=<[total_count]>" file:plugins/Denizen/logs/refunds/refunds_<util.time_now.format[yyyy-MM-dd]>.log
+
+    - narrate "<&a>LuckPerms group setup complete!"
+    - narrate "<&e>Group created: <&f>has_refunds"
+    - narrate "<&e>Players added: <&f><[added_count]>/<[total_count]>"
+
 get_total_sell_cost:
     type: procedure
     definitions: uuid
