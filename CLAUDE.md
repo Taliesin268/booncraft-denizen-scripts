@@ -149,6 +149,22 @@ plugins/Denizen/scripts/refunds/
 - Example: `foreach <[refund_players]> key:uuid as:player_name`
 - The key variable contains the map key, as variable contains the value
 
+#### Flag Behavior Gotchas
+- World event `enabled:` field checks if flag EXISTS, not its value
+- Setting `enabled: <server.has_flag[flag]>` will enable if flag has ANY value
+- To properly disable: Remove flag entirely with `:!` suffix
+- Never set toggle flags to false - just remove them
+
+#### Player UUID Lookup
+- Use `<server.match_offline_player[PLAYER_NAME].uuid>` to get UUID from name
+- Useful in admin commands to avoid manual UUID lookup
+- Works for offline players who have joined before
+
+#### Important File Locations
+- YAML data files: Place in `plugins/Denizen/` directory (not server root)
+- Scripts: `plugins/Denizen/scripts/` subdirectories
+- Logs: `plugins/Denizen/logs/` with daily rotation
+
 ### Testing Changes
 - Reload scripts: `/ex reload`
 - Check for errors: `/ex debug`
