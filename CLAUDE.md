@@ -260,3 +260,11 @@ plugins/Denizen/scripts/refunds/
 - Procedures for data calculations (`get_total_sell_cost`, `balance_refunds`)
 - Looks like to get the return of a task, you need to use <entry[save_name].created_queue.determination>
 - Denizen in general doesn't recommend using the `- execute` command for commands you've made in Denizen. It should be reserved for external commands. For Denizen commands, just use `- run`
+
+### Inventory Data Conversion
+- Minecraft inventory JSON uses 0-based indexing, Denizen expects 1-based indexing (add 1 to all slots)
+- Minecraft inventoryContents includes armor slots (36-39 becomes 37-40) and offhand slot (40 becomes 41)
+- NBT-style JSON from Minecraft uses unquoted keys and `1b`/`0b` for booleans - needs conversion
+- Remove `minecraft:` prefix from item IDs and component keys for cleaner Denizen scripts
+- Color codes: Convert legacy `§e` to Denizen `<&e>` format, or JSON color components to tags
+- Trim data should be structured as nested YAML with material and pattern as subkeys

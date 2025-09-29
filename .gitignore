@@ -1,5 +1,7 @@
 # Ignore everything
 *
+!**/*.py
+!**/requirements.txt
 !.gitignore
 !CLAUDE.md
 !README.md
