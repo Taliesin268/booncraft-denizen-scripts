@@ -268,3 +268,12 @@ plugins/Denizen/scripts/refunds/
 - Remove `minecraft:` prefix from item IDs and component keys for cleaner Denizen scripts
 - Color codes: Convert legacy `§e` to Denizen `<&e>` format, or JSON color components to tags
 - Trim data should be structured as nested YAML with material and pattern as subkeys
+- Lists are delimited by "|" (pipe) in Denizen, not semicolons. Example: `enchantments=sharpness,5|unbreaking,3`
+- Durability in Denizen represents uses consumed (damage), not remaining durability - map Minecraft damage values directly
+
+### Inventory Restore Pattern
+- Store inventory data as YAML files in `plugins/Denizen/data/` directory for persistence
+- Use recursive task processing for nested items (shulker boxes, bundles)
+- Process container items AFTER main item creation to avoid conflicts
+- Access player inventory containers with `inventory` tag
+- Shulker box contents: Process container component post-creation, store by slot number
