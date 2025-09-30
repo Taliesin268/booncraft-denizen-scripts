@@ -8,7 +8,7 @@ pufferfish_of_doom:
     lore:
     - <dark_gray>One touch means instant death!
     - <empty>
-    - <red>☠ <gray>Wielder must be OP
+    - <red>☠ <gray>Requires permission to use
     - <red>☠ <gray>Instantly kills any entity
     - <empty>
     - <dark_red><italic>With great power comes
@@ -22,9 +22,9 @@ pufferfish_kill_weapon:
     type: world
     events:
         on player tries to attack entity with:pufferfish_of_doom:
-            # Check if the attacking player is op
-            - if !<player.is_op>:
-                - narrate "<red>✘ You must be an operator to use the Pufferfish of Doom!" targets:<player>
+            # Check if the attacking player has permission
+            - if !<player.has_permission[denizen.pufferfish_of_doom.use]>:
+                - narrate "<red>✘ You don't have permission to use the Pufferfish of Doom!" targets:<player>
                 - stop
 
             # Get the target entity
