@@ -87,6 +87,12 @@ plugins/Denizen/scripts/refunds/
 - Aggregate stacks by material using maps in foreach loops
 - Balance overflow pattern: split refunds between balance capacity and direct money payments
 
+#### Ender Chest Access
+- Access player ender chests: `<player.enderchest>` returns inventory container
+- Works the same as regular inventory for give/take operations
+- Example: `give <[item]> to:<player.enderchest>` adds items to ender chest
+- Use in inventory restore patterns for dual inventory systems
+
 #### Book Creation and Text Formatting
 - Use `type: book` containers with `title`, `author`, `signed`, and `text` fields
 - Each page is a list item under `text:`

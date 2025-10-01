@@ -143,7 +143,7 @@ restore_inventory_command:
     type: command
     name: restoreinventory
     description: Restore a player's inventory from a YAML file
-    usage: /restoreinventory <&lt>player<&gt> <&lt>yaml_file<&gt>
+    usage: /restoreinventory <&lt>player<&gt> <&lt>yaml_file<&gt> [inventory|enderchest]
     permission: denizen.restoreinventory
     aliases:
     - restoreinv
@@ -151,9 +151,10 @@ restore_inventory_command:
     tab completions:
         1: <server.online_players.parse[name]>
         2: <util.list_files[.].filter[ends_with[.yaml]].parse[replace[.yaml]]>
+        3: inventory|enderchest
     script:
-    - if <context.args.size> != 2:
-        - narrate "<red>Usage: /restoreinventory <&lt>player<&gt> <&lt>yaml_file<&gt>"
+    - if <context.args.size> < 2 || <context.args.size> > 3:
+        - narrate "<red>Usage: /restoreinventory <&lt>player<&gt> <&lt>yaml_file<&gt> [inventory|enderchest]"
         - stop
 
     - define target_player <server.match_player[<context.args.get[1]>].if_null[null]>
@@ -165,6 +166,12 @@ restore_inventory_command:
     - if !<[yaml_file].ends_with[.yaml]>:
         - define yaml_file <[yaml_file]>.yaml
 
+    # Determine target inventory (default: inventory)
+    - define target_inv_type <context.args.get[3].if_null[inventory]>
+    - if <[target_inv_type]> != inventory && <[target_inv_type]> != enderchest:
+        - narrate "<red>Invalid target inventory type. Use 'inventory' or 'enderchest'."
+        - stop
+
     # Check if file exists
     - if !<util.has_file[<[yaml_file]>]>:
         - narrate "<red>File '<[yaml_file]>' does not exist."
@@ -173,8 +180,16 @@ restore_inventory_command:
     # Load the YAML data
     - ~yaml load:<[yaml_file]> id:inventory_restore
 
-    - if !<yaml[inventory_restore].contains[inventoryContents]>:
-        - narrate "<red>No inventory contents found in <[yaml_file]>"
+    # Check for appropriate contents key based on target
+    - if <[target_inv_type]> == enderchest:
+        - define contents_key enderChestContents
+        - define target_inventory <[target_player].enderchest>
+    - else:
+        - define contents_key inventoryContents
+        - define target_inventory <[target_player].inventory>
+
+    - if !<yaml[inventory_restore].contains[<[contents_key]>]>:
+        - narrate "<red>No <[contents_key]> found in <[yaml_file]>"
         - yaml unload id:inventory_restore
         - stop
 
@@ -185,7 +200,7 @@ restore_inventory_command:
     - define failed_items <list>
 
     # Process each item in the inventory
-    - foreach <yaml[inventory_restore].read[inventoryContents]> key:slot as:item_data:
+    - foreach <yaml[inventory_restore].read[<[contents_key]>]> key:slot as:item_data:
 
         # Use the task to process item data
         - run process_item_data def.item_data:<[item_data]> def.slot:<[slot]> save:processed_item
@@ -240,8 +255,11 @@ restore_inventory_command:
                 - narrate "<yellow>[DEBUG] Container is in string format - complex nested structure"
                 - narrate "<yellow>[DEBUG] Shulker box will be given empty (contents too complex to parse)"
 
-        # Give the item to the player
-        - give <[item]> player:<[target_player]> save:give_result
+        # Give the item to the player or enderchest
+        - if <[target_inv_type]> == enderchest:
+            - give <[item]> to:<[target_inventory]> save:give_result
+        - else:
+            - give <[item]> player:<[target_player]> save:give_result
 
         # Check for overflow
         - if <entry[give_result].leftover_items.size.if_null[0]> > 0:
@@ -255,6 +273,7 @@ restore_inventory_command:
     # Report results
     - narrate "<green>===== Inventory Restoration Complete ====="
     - narrate "<green>Target Player: <&e><[target_player].name>"
+    - narrate "<green>Target: <&e><[target_inv_type]>"
     - narrate "<green>Items Restored: <&a><[restored_items].size>"
 
     - if <[skipped_items].size> > 0:

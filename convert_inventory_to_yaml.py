@@ -57,6 +57,20 @@ def convert_inventory_json_to_yaml(json_file_path):
         yaml.dump(output_data, f, default_flow_style=False, allow_unicode=True, sort_keys=False)
 
     print(f"Converted {json_file_path} to {yaml_file_path}")
+
+    # Extract ender chest contents if present
+    if 'enderChestContents' in survival_data:
+        ender_chest_data = {'enderChestContents': process_items_with_slot_adjustment(survival_data['enderChestContents'])}
+
+        # Create separate ender chest YAML filename
+        ender_chest_yaml_path = json_file_path.replace('.json', '_enderchest.yaml')
+
+        # Write to separate YAML file
+        with open(ender_chest_yaml_path, 'w') as f:
+            yaml.dump(ender_chest_data, f, default_flow_style=False, allow_unicode=True, sort_keys=False)
+
+        print(f"Extracted ender chest to {ender_chest_yaml_path}")
+
     return yaml_file_path
 
 def process_items_with_slot_adjustment(items_dict):
