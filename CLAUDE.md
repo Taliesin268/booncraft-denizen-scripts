@@ -283,3 +283,4 @@ plugins/Denizen/scripts/refunds/
 - Process container items AFTER main item creation to avoid conflicts
 - Access player inventory containers with `inventory` tag
 - Shulker box contents: Process container component post-creation, store by slot number
+- When using list.filter_tag, the output needs to be a fully formed tag. i.e., you can't have <[filter_value].material.name> == carrot, you need <[filter_value].material.name.equals[carrot]>
