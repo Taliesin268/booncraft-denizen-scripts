@@ -8,4 +8,14 @@ alchemical_carrot:
     - <&e>
     - <&e>Used to brew Potions of Haste.
     - <&7>Requires Alchemy level 100+
-    # TODO: Make enchanted
+    enchantments:
+    - lure:1
+    mechanisms:
+        hides:
+        - ENCHANTS
+
+cancel_eating_alchemical_carrot:
+    type: world
+    events:
+        on player consumes alchemical_carrot:
+            - determine cancelled
