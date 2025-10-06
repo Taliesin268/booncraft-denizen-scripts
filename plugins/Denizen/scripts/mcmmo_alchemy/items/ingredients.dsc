@@ -1,3 +1,10 @@
+# Prevent alchemical ingredients from being dropped
+alchemical_ingredient_drop_prevention:
+    type: world
+    events:
+        on player drops alchemical_*:
+            - determine cancelled
+
 alchemical_carrot:
     type: item
     material: golden_carrot

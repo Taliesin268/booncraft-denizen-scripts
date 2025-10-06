@@ -3,13 +3,21 @@ alchemically_swap_all_items:
     type: task
     definitions: original_item|new_item|skip_enchanted
     script:
-        # Convert all carrots in inventory to alchemical carrots
+        # Convert all items in inventory to alchemical variants
         - foreach <player.inventory.find_all_items[<[original_item]>]> as:slot:
             - define current_item <player.inventory.slot[<[slot]>]>
             - if <[skip_enchanted].if_null[false]> && <[current_item].is_enchanted>:
                 - foreach next
             - define quantity <[current_item].quantity>
             - inventory set d:<player.inventory> slot:<[slot]> o:<item[<[new_item]>].with[quantity=<[quantity]>]>
+
+        # Also swap item on cursor if it matches
+        - define cursor_item <player.item_on_cursor>
+        - if <[cursor_item].material.name> == <[original_item]>:
+            - if <[skip_enchanted].if_null[false]> && <[cursor_item].is_enchanted>:
+                - stop
+            - define cursor_quantity <[cursor_item].quantity>
+            - adjust <player> item_on_cursor:<item[<[new_item]>].with[quantity=<[cursor_quantity]>]>
 
 mcmmo_alchemy_handlers:
     type: world
@@ -24,7 +32,7 @@ mcmmo_alchemy_handlers:
                 - run alchemically_swap_all_items def.original_item:<[custom_potion].get[base_ingredient]> def.new_item:<[alchemical_ingredient].with_flag[brewer:<player.uuid>]> def.skip_enchanted:<element[true].as_boolean>
 
         # Convert alchemical carrots back to regular carrots when closing brewing stand
-        on player closes brewing stand:
+        after player closes brewing stand:
             - foreach <proc[get_custom_potions]> as:custom_potion key:key:
                 - run alchemically_swap_all_items def.new_item:<[custom_potion].get[base_ingredient]> def.original_item:<[custom_potion].get[alchemical_ingredient]>
 
