@@ -1,11 +1,14 @@
 # TODO: handle other ways of moving the items around
 alchemically_swap_all_items:
     type: task
-    definitions: original_item|new_item
+    definitions: original_item|new_item|skip_enchanted
     script:
         # Convert all carrots in inventory to alchemical carrots
         - foreach <player.inventory.find_all_items[<[original_item]>]> as:slot:
-            - define quantity <player.inventory.slot[<[slot]>].quantity>
+            - define current_item <player.inventory.slot[<[slot]>]>
+            - if <[skip_enchanted].if_null[false]> && <[current_item].is_enchanted>:
+                - foreach next
+            - define quantity <[current_item].quantity>
             - inventory set d:<player.inventory> slot:<[slot]> o:<item[<[new_item]>].with[quantity=<[quantity]>]>
 
 mcmmo_alchemy_handlers:
@@ -15,7 +18,10 @@ mcmmo_alchemy_handlers:
         on player opens brewing stand:
             - foreach <proc[get_custom_potions]> as:custom_potion key:key:
                 - foreach next if:<player.mcmmo.level[alchemy].if_null[0].is[less].than[<[custom_potion].get[skill_level]>]>
-                - run alchemically_swap_all_items def.original_item:<[custom_potion].get[base_ingredient]> def.new_item:<item[<[custom_potion].get[alchemical_ingredient]>].with_flag[brewer:<player.uuid>]>
+                - define alchemical_ingredient <item[<[custom_potion].get[alchemical_ingredient]>]>
+                - if <[alchemical_ingredient].material.max_stack_size> == 1:
+                    - adjust <[alchemical_ingredient]> material:<[alchemical_ingredient].material.with[max_stack_size=64]>
+                - run alchemically_swap_all_items def.original_item:<[custom_potion].get[base_ingredient]> def.new_item:<[alchemical_ingredient].with_flag[brewer:<player.uuid>]> def.skip_enchanted:<element[true].as_boolean>
 
         # Convert alchemical carrots back to regular carrots when closing brewing stand
         on player closes brewing stand:

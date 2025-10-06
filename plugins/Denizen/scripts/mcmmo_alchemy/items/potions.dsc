@@ -7,7 +7,12 @@ get_custom_potions:
                 base_ingredient: carrot
                 alchemical_ingredient: alchemical_carrot
                 duration: 3600t
-            absorption_potion:
+            hunger_potion:
+                skill_level: 350
+                base_ingredient: rotten_flesh
+                alchemical_ingredient: alchemical_disintegrating_flesh
+                duration: 900t
+            resistance_potion:
                 skill_level: 200
                 base_ingredient: quartz
                 alchemical_ingredient: alchemical_quartz_dust
@@ -17,11 +22,36 @@ get_custom_potions:
                 base_ingredient: slime_ball
                 alchemical_ingredient: alchemical_sizzling_slimeball
                 duration: 3600t
+            nausea_potion:
+                skill_level: 500
+                base_ingredient: brown_mushroom
+                alchemical_ingredient: alchemical_mushroom_stalk
+                duration: 450t
+            blindness_potion:
+                skill_level: 500
+                base_ingredient: ink_sac
+                alchemical_ingredient: alchemical_invisible_ink
+                duration: 225t
             health_boost_potion:
                 skill_level: 350
                 base_ingredient: apple
                 alchemical_ingredient: alchemical_crabapple
                 duration: 1800t
+            saturation_potion:
+                skill_level: 750
+                base_ingredient: fern
+                alchemical_ingredient: alchemical_leaf_sinews
+                duration: 8t
+            decay_potion:
+                skill_level: 900
+                base_ingredient: poisonous_potato
+                alchemical_ingredient: alchemical_mashed_potato
+                duration: 450t
+            fortitude_potion:
+                skill_level: 1000
+                base_ingredient: golden_apple
+                alchemical_ingredient: alchemical_golden_apple_slice
+                duration: 450t
         - determine <[potions_list]>
 
 calculate_potion_duration:
@@ -42,6 +72,13 @@ haste_potion:
     mechanisms:
         potion_effects: <list[[base_type=mundane]|[effect=haste;duration=3600t;amplifier=0;ambient=false;particles=true;icon=true]]>
 
+hunger_potion:
+    type: item
+    material: potion
+    display name: <&f>Potion of Hunger
+    mechanisms:
+        potion_effects: <list[[base_type=mundane]|[effect=hunger;duration=900t;amplifier=0;ambient=false;particles=true;icon=true]]>
+
 absorption_potion:
     type: item
     material: potion
@@ -56,12 +93,47 @@ dullness_potion:
     mechanisms:
         potion_effects: <list[[base_type=mundane]|[effect=mining_fatigue;duration=3600t;amplifier=0;ambient=false;particles=true;icon=true]]>
 
+nausea_potion:
+    type: item
+    material: potion
+    display name: <&f>Potion of Nausea
+    mechanisms:
+        potion_effects: <list[[base_type=mundane]|[effect=nausea;duration=450t;amplifier=0;ambient=false;particles=true;icon=true]]>
+
+blindness_potion:
+    type: item
+    material: potion
+    display name: <&f>Potion of Blindness
+    mechanisms:
+        potion_effects: <list[[base_type=mundane]|[effect=blindness;duration=225t;amplifier=0;ambient=false;particles=true;icon=true]]>
+
 health_boost_potion:
     type: item
     material: potion
     display name: <&f>Potion of Health Boost
     mechanisms:
         potion_effects: <list[[base_type=mundane]|[effect=health_boost;duration=1800t;amplifier=0;ambient=false;particles=true;icon=true]]>
+
+saturation_potion:
+    type: item
+    material: potion
+    display name: <&f>Potion of Saturation
+    mechanisms:
+        potion_effects: <list[[base_type=mundane]|[effect=saturation;duration=8t;amplifier=0;ambient=false;particles=true;icon=true]]>
+
+decay_potion:
+    type: item
+    material: potion
+    display name: <&f>Potion of Decay
+    mechanisms:
+        potion_effects: <list[[base_type=mundane]|[effect=wither;duration=450t;amplifier=0;ambient=false;particles=true;icon=true]]>
+
+resistance_potion:
+    type: item
+    material: potion
+    display name: <&f>Potion of Resistance
+    mechanisms:
+        potion_effects: <list[[base_type=mundane]|[effect=resistance;duration=450t;amplifier=0;ambient=false;particles=true;icon=true]]>
 
 generic_potion:
     type: item
