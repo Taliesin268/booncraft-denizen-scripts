@@ -17,6 +17,11 @@ get_custom_potions:
                 base_ingredient: slime_ball
                 alchemical_ingredient: alchemical_sizzling_slimeball
                 duration: 3600t
+            health_boost_potion:
+                skill_level: 350
+                base_ingredient: apple
+                alchemical_ingredient: alchemical_crabapple
+                duration: 1800t
         - determine <[potions_list]>
 
 calculate_potion_duration:
@@ -50,6 +55,13 @@ dullness_potion:
     display name: <&f>Potion of Dullness
     mechanisms:
         potion_effects: <list[[base_type=mundane]|[effect=mining_fatigue;duration=3600t;amplifier=0;ambient=false;particles=true;icon=true]]>
+
+health_boost_potion:
+    type: item
+    material: potion
+    display name: <&f>Potion of Health Boost
+    mechanisms:
+        potion_effects: <list[[base_type=mundane]|[effect=health_boost;duration=1800t;amplifier=0;ambient=false;particles=true;icon=true]]>
 
 generic_potion:
     type: item

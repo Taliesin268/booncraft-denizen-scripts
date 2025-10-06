@@ -50,3 +50,24 @@ alchemical_sizzling_slimeball:
     mechanisms:
         hides:
         - ENCHANTS
+
+alchemical_crabapple:
+    type: item
+    material: spider_eye
+    display name: <&6>Ugly Crabapple
+    lore:
+    - <&7>A gnarled, misshapen crabapple with
+    - <&7>peculiar alchemical properties.
+    - <&e>
+    - <&e>Used to brew Potions of Health Boost.
+    - <&7>Requires Alchemy level 350+
+    enchantments:
+    - lure:1
+    mechanisms:
+        hides:
+        - ENCHANTS
+cancel_eating_alchemical_crabapple:
+    type: world
+    events:
+        on player consumes alchemical_crabapple:
+            - determine cancelled

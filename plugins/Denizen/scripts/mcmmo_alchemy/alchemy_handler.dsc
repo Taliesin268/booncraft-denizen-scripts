@@ -14,7 +14,7 @@ mcmmo_alchemy_handlers:
         # Convert carrots to alchemical carrots for Bedrock players when opening brewing stand
         on player opens brewing stand:
             - foreach <proc[get_custom_potions]> as:custom_potion key:key:
-                - foreach next if:<player.mcmmo.level[alchemy].is[less].than[<[custom_potions].get[base_ingredient]>]>
+                - foreach next if:<player.mcmmo.level[alchemy].if_null[0].is[less].than[<[custom_potion].get[skill_level]>]>
                 - run alchemically_swap_all_items def.original_item:<[custom_potion].get[base_ingredient]> def.new_item:<item[<[custom_potion].get[alchemical_ingredient]>].with_flag[brewer:<player.uuid>]>
 
         # Convert alchemical carrots back to regular carrots when closing brewing stand
