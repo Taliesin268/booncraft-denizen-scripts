@@ -13,8 +13,13 @@ alchemical_carrot:
     mechanisms:
         hides:
         - ENCHANTS
+cancel_eating_alchemical_carrot:
+    type: world
+    events:
+        on player consumes alchemical_carrot:
+            - determine cancelled
 
-quartz_dust:
+alchemical_quartz_dust:
     type: item
     material: sugar
     display name: <&6>Nether Quartz Dust
@@ -30,8 +35,18 @@ quartz_dust:
         hides:
         - ENCHANTS
 
-cancel_eating_alchemical_carrot:
-    type: world
-    events:
-        on player consumes alchemical_carrot:
-            - determine cancelled
+alchemical_sizzling_slimeball:
+    type: item
+    material: magma_cream
+    display name: <&6>Sizzling Slimeball
+    lore:
+    - <&7>A slimeball heated to extreme temperatures.
+    - <&7>It sizzles to the touch.
+    - <&e>
+    - <&e>Used to brew Potions of Mining Fatigue.
+    - <&7>Requires Alchemy level 200+
+    enchantments:
+    - lure:1
+    mechanisms:
+        hides:
+        - ENCHANTS

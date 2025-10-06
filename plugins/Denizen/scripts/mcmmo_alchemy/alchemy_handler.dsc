@@ -28,7 +28,7 @@ mcmmo_alchemy_handlers:
             - define ingredient <context.inventory.input>
             # TODO: apply experience to brewer
 
-            # TODO: Handle non-alchemical ingredients (redstone, glowstone, gunpowder, dragon's breath)
+            # TODO: If no changes (air or invalid potion), then cancel (check if normal potions have "recipes")
             - if !<[ingredient].script.name.exists>:
                 - define result <context.result>
                 - choose <[ingredient].material.name>:

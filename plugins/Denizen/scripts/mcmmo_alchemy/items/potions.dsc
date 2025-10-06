@@ -10,8 +10,13 @@ get_custom_potions:
             absorption_potion:
                 skill_level: 200
                 base_ingredient: quartz
-                alchemical_ingredient: quartz_dust
+                alchemical_ingredient: alchemical_quartz_dust
                 duration: 1800t
+            dullness_potion:
+                skill_level: 200
+                base_ingredient: slime_ball
+                alchemical_ingredient: alchemical_sizzling_slimeball
+                duration: 3600t
         - determine <[potions_list]>
 
 calculate_potion_duration:
@@ -38,6 +43,13 @@ absorption_potion:
     display name: <&f>Potion of Absorption
     mechanisms:
         potion_effects: <list[[base_type=mundane]|[effect=absorption;duration=1800t;amplifier=0;ambient=false;particles=true;icon=true]]>
+
+dullness_potion:
+    type: item
+    material: potion
+    display name: <&f>Potion of Dullness
+    mechanisms:
+        potion_effects: <list[[base_type=mundane]|[effect=mining_fatigue;duration=3600t;amplifier=0;ambient=false;particles=true;icon=true]]>
 
 generic_potion:
     type: item
@@ -91,7 +103,9 @@ amplify_potion:
     script:
         - define base_effects <[potion].effects_data>
         - define base_amplifier <[base_effects].get[2].get[amplifier].if_null[0]>
-        - define base_effects <[base_effects].overwrite[<[base_effects].get[2].include[amplifier=<[base_amplifier].add[1]>]>].at[2]>
+        - define base_duration <[base_effects].get[2].get[duration].in_seconds.if_null[0]>
+        - define new_duration <[base_duration].proc[calculate_potion_duration].context[amplified]>
+        - define base_effects <[base_effects].overwrite[<[base_effects].get[2].include[amplifier=<[base_amplifier].add[1]>].include[duration=<[new_duration]>]>].at[2]>
         - define name_suffix " II"
         - repeat <[base_amplifier]>:
             - define name_suffix "<[name_suffix]>I"
