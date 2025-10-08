@@ -1,4 +1,3 @@
-# TODO: handle other ways of moving the items around
 alchemically_swap_all_items:
     type: task
     definitions: original_item|new_item|skip_enchanted
@@ -19,11 +18,26 @@ alchemically_swap_all_items:
             - define cursor_quantity <[cursor_item].quantity>
             - adjust <player> item_on_cursor:<item[<[new_item]>].with[quantity=<[cursor_quantity]>]>
 
+calculate_brew_time:
+    type: procedure
+    definitions: skill_level
+    script:
+    - if <[skill_level]> < 100:
+        - determine <duration[20s]>
+    - else if <[skill_level]> >= 1000:
+        - determine <duration[5s]>
+    - else:
+        # Linear interpolation: 20 - ((skill - 100) / 900) * 15
+        - define progress <[skill_level].sub[100].div[900]>
+        - define time_reduction <[progress].mul[15]>
+        - define brew_time <element[20].sub[<[time_reduction]>]>
+        - determine <duration[<[brew_time]>]>
+
 mcmmo_alchemy_handlers:
     type: world
     events:
         # Convert carrots to alchemical carrots for Bedrock players when opening brewing stand
-        on player opens brewing stand:
+        on player opens brewing:
             - foreach <proc[get_custom_potions]> as:custom_potion key:key:
                 - foreach next if:<player.mcmmo.level[alchemy].if_null[0].is[less].than[<[custom_potion].get[skill_level]>]>
                 - define alchemical_ingredient <item[<[custom_potion].get[alchemical_ingredient]>]>
@@ -32,19 +46,25 @@ mcmmo_alchemy_handlers:
                 - run alchemically_swap_all_items def.original_item:<[custom_potion].get[base_ingredient]> def.new_item:<[alchemical_ingredient].with_flag[brewer:<player.uuid>]> def.skip_enchanted:<element[true].as_boolean>
 
         # Convert alchemical carrots back to regular carrots when closing brewing stand
-        after player closes brewing stand:
+        after player closes brewing:
             - foreach <proc[get_custom_potions]> as:custom_potion key:key:
                 - run alchemically_swap_all_items def.new_item:<[custom_potion].get[base_ingredient]> def.original_item:<[custom_potion].get[alchemical_ingredient]>
+
+        on brewing starts:
+            - if <context.item> matches alchemical_*:
+                - stop if:!<context.item.has_flag[brewer]>
+                - define brewer_uuid <context.item.flag[brewer]>
+                # set the amount of time it takes to brew appropriately based on their skill level
+                - determine BREW_TIME:<player[<[brewer_uuid]>].mcmmo.level[alchemy].if_null[0].proc[calculate_brew_time]>
 
         # Handle brewing completion and replace with custom potions
         on brewing stand brews:
             # Get the ingredient item from the brewing stand
             - define ingredient <context.inventory.input>
-            # TODO: apply experience to brewer
 
-            # TODO: If no changes (air or invalid potion), then cancel (check if normal potions have "recipes")
             - if !<[ingredient].script.name.exists>:
                 - define result <context.result>
+                - define number_of_custom_potions 0
                 - choose <[ingredient].material.name>:
                     - case redstone:
                         - foreach <context.inventory.list_contents.first[3]> as:base_item:
@@ -53,6 +73,7 @@ mcmmo_alchemy_handlers:
                             - if !<[base_item].proc[is_extended]> and !<[base_item].proc[is_amplified]>:
                                 - define extended_potion <[base_item].proc[extend_potion]>
                                 - define result <[result].overwrite[<[extended_potion]>].at[<[loop_index]>]>
+                                - define number_of_custom_potions:++
                     - case glowstone_dust:
                         - foreach <context.inventory.list_contents.first[3]> as:base_item:
                             - foreach next if:!<proc[get_custom_potions].keys.contains[<[base_item].script.name>]>
@@ -60,6 +81,7 @@ mcmmo_alchemy_handlers:
                             - if !<[base_item].proc[is_extended]> and !<[base_item].proc[is_amplified]>:
                                 - define amplified_potion <[base_item].proc[amplify_potion]>
                                 - define result <[result].overwrite[<[amplified_potion]>].at[<[loop_index]>]>
+                                - define number_of_custom_potions:++
                     - case gunpowder:
                         - foreach <context.inventory.list_contents.first[3]> as:base_item:
                             - foreach next if:!<proc[get_custom_potions].keys.contains[<[base_item].script.name>]>
@@ -67,6 +89,7 @@ mcmmo_alchemy_handlers:
                             - if !<[base_item].proc[is_splash]> and !<[base_item].proc[is_lingering]>:
                                 - define splash_potion <[base_item].proc[convert_potion_to_splash]>
                                 - define result <[result].overwrite[<[splash_potion]>].at[<[loop_index]>]>
+                                - define number_of_custom_potions:++
                     - case dragon_breath:
                         - foreach <context.inventory.list_contents.first[3]> as:base_item:
                             - foreach next if:!<proc[get_custom_potions].keys.contains[<[base_item].script.name>]>
@@ -74,8 +97,10 @@ mcmmo_alchemy_handlers:
                             - if <[base_item].proc[is_splash]> and !<[base_item].proc[is_lingering]>:
                                 - define lingering_potion <[base_item].proc[convert_potion_to_lingering]>
                                 - define result <[result].overwrite[<[lingering_potion]>].at[<[loop_index]>]>
+                                - define number_of_custom_potions:++
                     - default:
                         - stop
+                - stop if:<[number_of_custom_potions].equals[0]>
                 - determine RESULT:<[result]>
 
             - stop if:!<[ingredient].has_flag[brewer]>
@@ -85,7 +110,7 @@ mcmmo_alchemy_handlers:
                     - define potion <[custom_potion]>
                     - define potion_name <[key]>
                     - foreach break
-                
+
             - stop if:!<[potion].exists>
 
             # Get the brewer and verify Alchemy level
@@ -94,11 +119,14 @@ mcmmo_alchemy_handlers:
                 - determine cancelled
 
             - define result <list>
+            - define number_of_custom_potions 0
             - foreach <context.result> as:result_item:
                 - if <[result_item].effects_data.first.get[base_type]> != awkward:
                     - define result:->:<[result_item]>
                     - foreach next
                 - define result:->:<item[<[potion_name]>]>
+                - define number_of_custom_potions:++
+
+            - mcmmo add xp skill:alchemy quantity:<[number_of_custom_potions].mul[30]> player:<player[<[brewer_uuid]>]>
 
             - determine RESULT:<[result]>
-        

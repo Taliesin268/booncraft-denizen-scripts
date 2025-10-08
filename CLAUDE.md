@@ -238,6 +238,26 @@ plugins/Denizen/scripts/refunds/
 - Clickable "Show more" that runs same task with next page
 - Pass page as definition: `run task def.page:<[next_page]>`
 
+#### Brewing Events and Mechanics
+- Use simplified event syntax: `on player opens brewing` (not `brewing stand`)
+- Event triggers: `on brewing starts`, `after player closes brewing`
+- **Dynamic brew time**: Use `determine BREW_TIME:<duration>` in `on brewing starts` to modify brewing speed
+- **Result modification**: Use `determine RESULT:<list>` in `on brewing stand brews` to replace potion results
+- Access brewing stand inventory: `<context.inventory>`, ingredient: `<context.inventory.input>`
+- Counter pattern: Use `- define counter:++` to track successful operations for experience/rewards
+
+#### McMMO Integration
+- Check skill levels: `<player.mcmmo.level[skill_name].if_null[0]>` (always use if_null for safety)
+- Award experience: `mcmmo add xp skill:skill_name quantity:<amount> player:<player>`
+- Skill-based mechanics: Use procedures for complex calculations (e.g., linear interpolation for brew times)
+- Example pattern: Level 100 = 20s, Level 1000 = 5s, linear interpolation between
+
+#### Procedures for Complex Calculations
+- Use procedures for reusable math logic (skill scaling, time calculations, etc.)
+- Example: Linear interpolation with `.sub[]`, `.div[]`, `.mul[]` for smooth scaling
+- Return calculated values with `determine <value>`
+- Procedures can be called from tags: `<[skill_level].proc[calculate_brew_time]>`
+
 ### Testing Changes
 - Reload scripts: `/ex reload`
 - Check for errors: `/ex debug`

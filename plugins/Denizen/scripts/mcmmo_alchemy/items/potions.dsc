@@ -12,7 +12,7 @@ get_custom_potions:
                 base_ingredient: rotten_flesh
                 alchemical_ingredient: alchemical_disintegrating_flesh
                 duration: 900t
-            resistance_potion:
+            absorption_potion:
                 skill_level: 200
                 base_ingredient: quartz
                 alchemical_ingredient: alchemical_quartz_dust
@@ -47,7 +47,7 @@ get_custom_potions:
                 base_ingredient: poisonous_potato
                 alchemical_ingredient: alchemical_mashed_potato
                 duration: 450t
-            fortitude_potion:
+            resistance_potion:
                 skill_level: 1000
                 base_ingredient: golden_apple
                 alchemical_ingredient: alchemical_golden_apple_slice
