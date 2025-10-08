@@ -37,10 +37,9 @@ give_refund_book:
         # Check if player has refund data
         - define has_sold <server.has_flag[refunds.<player.uuid>.sold]>
         - define has_bought <server.has_flag[refunds.<player.uuid>.bought]>
-        - define has_balance "<server.flag[refunds.<player.uuid>.balance].if_null[0]> > 0"
 
         # Only proceed if player has any refund data
-        - if !<[has_sold]> && !<[has_bought]> && !<[has_balance]>:
+        - if !<[has_sold]> && !<[has_bought]> && <server.flag[refunds.<player.uuid>.balance].if_null[0]> <= 0:
             - ~log "REFUND_BOOK_SKIP: TraceID=<[trace_id]> Player=<player.name>(<player.uuid>) Reason=NO_REFUND_DATA" file:plugins/Denizen/logs/refunds/refunds_<util.time_now.format[yyyy-MM-dd]>.log
             - stop
 
