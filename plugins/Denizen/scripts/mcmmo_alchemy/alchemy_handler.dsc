@@ -130,3 +130,42 @@ mcmmo_alchemy_handlers:
             - mcmmo add xp skill:alchemy quantity:<[number_of_custom_potions].mul[30]> player:<player[<[brewer_uuid]>]>
 
             - determine RESULT:<[result]>
+
+
+offer_alchemy_book:
+    type: task
+    script:
+        # Rate limit to prevent message spam (5 minutes per player)
+        - ratelimit <player> 5m
+
+        # Create clickable for downloading the guide book
+        - clickable for:<player> until:5m usages:1 save:download_book:
+            - give alchemy_guide_book to:<player.inventory>
+            - flag player alchemy_book_offered
+            - narrate "<&a>Guide book added to your inventory!"
+
+        # Create clickable for dismissing the notification
+        - clickable for:<player> until:5m usages:1 save:dismiss:
+            - flag player alchemy_book_offered
+            - narrate "<&7>You can always get the guide book by asking a staff member."
+
+        # Send notification message with clickables
+        - narrate "<&6><&l>Bedrock Alchemy System"
+        - narrate "<&7>You've unlocked Alchemy level 100! Booncraft uses a custom alchemy system for Bedrock compatibility."
+        - narrate "<&7>"
+        - narrate "<&a><element[⬇ Download Guide Book].on_click[<entry[download_book].command>]> <&8>| <&c><element[Don't remind me again].on_click[<entry[dismiss].command>]>"
+
+alchemy_book_distribution:
+    type: world
+    events:
+        # Notify players when they reach level 100+ in Alchemy
+        on mcmmo player levels up alchemy flagged:!alchemy_book_offered:
+            - wait 1s
+            - if <context.new_level> >= 100 && !<player.has_flag[alchemy_book_offered]>:
+                - run offer_alchemy_book
+
+        # Notify existing players with Alchemy >= 100 when they join
+        on player joins flagged:!alchemy_book_offered:
+            - wait 4s
+            - if <player.mcmmo.level[alchemy].if_null[0]> >= 100 && !<player.has_flag[alchemy_book_offered]>:
+                - run offer_alchemy_book
